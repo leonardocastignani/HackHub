@@ -4,7 +4,7 @@
             "type": "java",
             "name": "Spring Boot-HackhubApplication<hackhub>",
             "request": "launch",
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}/Visual Studio Code/hackhub",
             "mainClass": "it.unicam.cs.ids.hackhub.HackhubApplication",
             "projectName": "hackhub",
             "args": "",
