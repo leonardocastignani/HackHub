@@ -6,5 +6,4 @@ import org.springframework.stereotype.*;
 
 @Repository
 public interface TeamRepository extends JpaRepository<Team, Long> {
-    // Esempio di query method custom (Spring la implementa automaticamente)
 }

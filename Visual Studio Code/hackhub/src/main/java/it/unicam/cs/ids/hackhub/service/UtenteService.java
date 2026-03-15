@@ -2,10 +2,8 @@ package it.unicam.cs.ids.hackhub.service;
 
 import it.unicam.cs.ids.hackhub.model.*;
 import it.unicam.cs.ids.hackhub.repository.*;
-
 import org.springframework.beans.factory.annotation.*;
 import org.springframework.stereotype.*;
-
 import java.util.*;
 
 @Service
@@ -16,11 +14,9 @@ public class UtenteService {
 
     // TODO aggiornare: diversi tipi di fallimenti
     public Utente registraUtente(Utente utente) {
-        // Controlla se l'email esiste già
         if (utenteRepository.findByEmail(utente.getEmail()).isPresent()) {
             throw new RuntimeException("Email già in uso!");
         }
-        // Qui in un'app reale dovresti criptare la password!
         return utenteRepository.save(utente);
     }
 

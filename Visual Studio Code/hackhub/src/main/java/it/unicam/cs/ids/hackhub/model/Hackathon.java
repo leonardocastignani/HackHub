@@ -1,11 +1,9 @@
 package it.unicam.cs.ids.hackhub.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
-import java.time.LocalDate;
-import java.util.List;
+import lombok.*;
+import java.time.*;
+import java.util.*;
 
 @Entity
 @Data
@@ -22,12 +20,11 @@ public class Hackathon {
     
     private LocalDate dataInizio;
     private LocalDate dataFine;
-    private String stato; // Potresti usare un Enum qui (es. APERTO, CHIUSO)
+    private String stato;
     private LocalDate scadenzaIscrizione;
     private LocalDate dataCreazione;
 
     // Relazione: Un Hackathon -> Molti Team
-    // "mappedBy" indica che la FK è nella tabella Team
     @OneToMany(mappedBy = "hackathon", cascade = CascadeType.ALL)
     private List<Team> teams;
 }

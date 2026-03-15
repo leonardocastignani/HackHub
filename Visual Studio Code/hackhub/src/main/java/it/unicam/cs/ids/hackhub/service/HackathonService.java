@@ -21,7 +21,6 @@ public class HackathonService {
     }
 
     public Hackathon creaHackathon(Hackathon hackathon) {
-        // Qui potresti aggiungere controlli (es. data fine > data inizio)
         return hackathonRepository.save(hackathon);
     }
 }
