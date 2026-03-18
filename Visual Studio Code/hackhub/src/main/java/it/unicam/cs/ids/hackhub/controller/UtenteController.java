@@ -2,7 +2,6 @@ package it.unicam.cs.ids.hackhub.controller;
 
 import it.unicam.cs.ids.hackhub.model.*;
 import it.unicam.cs.ids.hackhub.service.*;
-
 import org.springframework.beans.factory.annotation.*;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
@@ -23,14 +22,13 @@ public class UtenteController {
         }
     }
 
-    // Esempio semplice di login (passando dati come JSON)
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Utente credenziali) {
         try {
             Utente u = utenteService.login(credenziali.getEmail(), credenziali.getPassword());
             return ResponseEntity.ok(u);
         } catch (RuntimeException e) {
-            return ResponseEntity.status(401).body(e.getMessage()); // 401 Unauthorized
+            return ResponseEntity.status(401).body(e.getMessage());
         }
     }
 }

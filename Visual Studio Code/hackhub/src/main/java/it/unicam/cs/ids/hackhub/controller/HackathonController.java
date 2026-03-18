@@ -26,9 +26,8 @@ public class HackathonController {
 
     @GetMapping("/{id}")
     public ResponseEntity<Hackathon> getHackathon(@PathVariable Long id) {
-        // Restituisce 200 OK con l'oggetto se trovato, altrimenti 404 Not Found
         return hackathonService.ottieniHackathon(id)
-                .map(ResponseEntity::ok) // Se presente
-                .orElse(ResponseEntity.notFound().build()); // Se assente
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 }

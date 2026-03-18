@@ -1,9 +1,9 @@
 package it.unicam.cs.ids.hackhub.controller;
 
-import it.unicam.cs.ids.hackhub.model.Team;
-import it.unicam.cs.ids.hackhub.service.TeamService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
+import it.unicam.cs.ids.hackhub.model.*;
+import it.unicam.cs.ids.hackhub.service.*;
+import org.springframework.beans.factory.annotation.*;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -13,8 +13,6 @@ public class TeamController {
     @Autowired
     private TeamService teamService;
 
-    // Esempio chiamata: POST /api/teams?hackathonId=1&ownerId=5
-    // Body: { "nomeTeam": "SuperCoders", "numeroMembri": 4 }
     @PostMapping
     public ResponseEntity<?> creaNuovoTeam(
             @RequestBody Team team, 
