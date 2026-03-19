@@ -2,6 +2,9 @@ package it.unicam.cs.ids.hackhub.service;
 
 import it.unicam.cs.ids.hackhub.model.*;
 import it.unicam.cs.ids.hackhub.repository.*;
+
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.*;
 import org.springframework.stereotype.*;
 
@@ -26,5 +29,9 @@ public class TeamService {
         team.setOwner(owner);
 
         return teamRepository.save(team);
+    }
+
+    public Optional<Team> ottieniTeam(Long id) {
+        return teamRepository.findById(id);
     }
 }

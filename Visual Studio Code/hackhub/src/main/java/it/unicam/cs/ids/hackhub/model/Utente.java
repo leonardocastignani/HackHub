@@ -1,5 +1,6 @@
 package it.unicam.cs.ids.hackhub.model;
 
+import com.fasterxml.jackson.annotation.*;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -21,10 +22,12 @@ public class Utente {
 
     @Column(unique = true)
     private String email;
-
+    
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
     // Relazione: Molti Utenti -> 1 Team
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "team_id")
     private Team team;

@@ -25,4 +25,11 @@ public class TeamController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Team> getTeam(@PathVariable Long id) {
+        return teamService.ottieniTeam(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
 }

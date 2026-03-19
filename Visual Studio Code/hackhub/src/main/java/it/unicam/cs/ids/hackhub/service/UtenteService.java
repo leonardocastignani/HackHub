@@ -30,4 +30,8 @@ public class UtenteService {
              throw new RuntimeException("Credenziali non valide");
         }
     }
+
+    public Optional<Utente> ottieniUtente(Long id) {
+        return utenteRepository.findById(id);
+    }      
 }

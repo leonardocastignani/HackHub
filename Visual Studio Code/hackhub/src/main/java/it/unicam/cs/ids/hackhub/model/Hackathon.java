@@ -1,5 +1,6 @@
 package it.unicam.cs.ids.hackhub.model;
 
+import com.fasterxml.jackson.annotation.*;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.*;
@@ -25,6 +26,7 @@ public class Hackathon {
     private LocalDate dataCreazione;
 
     // Relazione: Un Hackathon -> Molti Team
+    @JsonIgnore
     @OneToMany(mappedBy = "hackathon", cascade = CascadeType.ALL)
     private List<Team> teams;
 }

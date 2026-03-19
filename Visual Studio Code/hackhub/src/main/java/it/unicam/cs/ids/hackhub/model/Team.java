@@ -1,5 +1,6 @@
 package it.unicam.cs.ids.hackhub.model;
 
+import com.fasterxml.jackson.annotation.*;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.*;
@@ -17,6 +18,7 @@ public class Team {
 
     private String nomeTeam;
 
+    @JsonIgnoreProperties({"team"})
     @OneToOne
     @JoinColumn(name = "owner_id")
     private Utente owner;
@@ -25,10 +27,12 @@ public class Team {
     private LocalDate dataCreazione;
 
     // Relazione: Un Team -> Molti Utenti (membri)
+    @JsonIgnore
     @OneToMany(mappedBy = "team")
     private List<Utente> membri;
 
     // Relazione: Molti Team -> 1 Hackathon (partecipa)
+    @JsonIgnoreProperties({"teams"})
     @ManyToOne
     @JoinColumn(name = "hackathon_id")
     private Hackathon hackathon;

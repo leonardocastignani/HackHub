@@ -31,4 +31,11 @@ public class UtenteController {
             return ResponseEntity.status(401).body(e.getMessage());
         }
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Utente> getUtente(@PathVariable Long id) {
+        return utenteService.ottieniUtente(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
 }
