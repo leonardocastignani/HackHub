@@ -15,11 +15,10 @@ public class TeamController {
 
     @PostMapping
     public ResponseEntity<?> creaNuovoTeam(
-            @RequestBody Team team, 
-            @RequestParam Long hackathonId, 
+            @RequestBody Team team,
             @RequestParam Long ownerId) {
         try {
-            Team nuovoTeam = teamService.creaTeam(team, hackathonId, ownerId);
+            Team nuovoTeam = teamService.creaTeam(team, ownerId);
             return ResponseEntity.ok(nuovoTeam);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
