@@ -6,29 +6,93 @@ import lombok.*;
 
 @Entity
 @Data
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 public class Utente {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(unique = true)
+    @Column(name = "codice_fiscale", length = 16, nullable = false)
     private String codiceFiscale;
 
+    @Column(nullable = false)
     private String nome;
+
+    @Column(nullable = false)
     private String cognome;
 
-    @Column(unique = true)
+    @Column(nullable = false, unique = true)
     private String email;
-    
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+
+    @Column(nullable = false)
     private String password;
 
-    // Relazione: Molti Utenti -> 1 Team
-    @JsonIgnore
-    @ManyToOne
+    // Relazione: Un utente appartiene a un Team (0..1)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "team_id")
+    @JsonIgnoreProperties("membri")
     private Team team;
+
+    // Costruttore privato usato dal Builder
+    private Utente(UtenteBuilder builder) {
+        this.codiceFiscale = builder.codiceFiscale;
+        this.nome = builder.nome;
+        this.cognome = builder.cognome;
+        this.email = builder.email;
+        this.password = builder.password;
+    }
+
+    // --- IMPLEMENTAZIONE DESIGN PATTERN: BUILDER ---
+    public static class UtenteBuilder {
+        private String codiceFiscale;
+        private String nome;
+        private String cognome;
+        private String email;
+        private String password;
+
+        public UtenteBuilder setCodiceFiscale(String codiceFiscale) {
+            this.codiceFiscale = codiceFiscale;
+            return this;
+        }
+
+        public UtenteBuilder setNome(String nome) {
+            this.nome = nome;
+            return this;
+        }
+
+        public UtenteBuilder setCognome(String cognome) {
+            this.cognome = cognome;
+            return this;
+        }
+
+        public UtenteBuilder setEmail(String email) {
+            this.email = email;
+            return this;
+        }
+
+        public UtenteBuilder setPassword(String password) {
+            this.password = password;
+            return this;
+        }
+
+        public Utente build() {
+            if (this.codiceFiscale == null || this.codiceFiscale.trim().isEmpty() ||
+                this.nome == null || this.nome.trim().isEmpty() ||
+                this.cognome == null || this.cognome.trim().isEmpty() ||
+                this.email == null || this.email.trim().isEmpty() ||
+                this.password == null || this.password.trim().isEmpty()) {
+                
+                throw new IllegalArgumentException("Dati non corretti: campi obbligatori mancanti.");
+            }
+
+            if (this.codiceFiscale.length() != 16) {
+                throw new IllegalArgumentException("Dati non corretti: il Codice Fiscale deve essere di 16 caratteri.");
+            }
+
+            if (!this.email.contains("@")) {
+                throw new IllegalArgumentException("Dati non corretti: formato email non valido.");
+            }
+
+            return new Utente(this);
+        }
+    }
 }

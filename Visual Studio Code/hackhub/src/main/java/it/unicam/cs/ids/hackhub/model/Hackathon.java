@@ -1,6 +1,5 @@
 package it.unicam.cs.ids.hackhub.model;
 
-import com.fasterxml.jackson.annotation.*;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.*;
@@ -16,17 +15,19 @@ public class Hackathon {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
     private String nome;
+
+    @Column(length = 500)
     private String descrizione;
-    
+
     private LocalDate dataInizio;
     private LocalDate dataFine;
     private String stato;
     private LocalDate scadenzaIscrizione;
-    private LocalDate dataCreazione;
+    private LocalDate dataCreazione = LocalDate.now();
 
-    // Relazione: Un Hackathon -> Molti Team
-    @JsonIgnore
+    // Relazione: Un Hackathon ospita molti Team (0..*)
     @OneToMany(mappedBy = "hackathon", cascade = CascadeType.ALL)
-    private List<Team> teams;
+    private List<Team> teamsPartecipanti = new ArrayList<>();
 }

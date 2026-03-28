@@ -14,26 +14,27 @@ public class Team {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long codiceTeam;
 
+    @Column(nullable = false, unique = true)
     private String nomeTeam;
 
-    @JsonIgnoreProperties({"team"})
-    @OneToOne
-    @JoinColumn(name = "owner_id")
-    private Utente owner;
+    @Column(nullable = false)
+    private String ownerId; 
 
-    private int numeroMembri;
-    private LocalDate dataCreazione;
+    @Column(nullable = false)
+    private int numeroMembri = 1;
 
-    // Relazione: Un Team -> Molti Utenti (membri)
-    @JsonIgnore
-    @OneToMany(mappedBy = "team")
-    private List<Utente> membri;
+    @Column(nullable = false)
+    private LocalDate dataCreazione = LocalDate.now();
 
-    // Relazione: Molti Team -> 1 Hackathon (partecipa)
-    @JsonIgnoreProperties({"teams"})
-    @ManyToOne
+    // Relazione: Un team ha molti utenti (1..*)
+    @OneToMany(mappedBy = "team", cascade = CascadeType.ALL)
+    @JsonIgnoreProperties("team")
+    private List<Utente> membri = new ArrayList<>();
+
+    // Relazione: Un team partecipa a un Hackathon (0..1)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "hackathon_id")
     private Hackathon hackathon;
 }
