@@ -2,36 +2,35 @@ package it.unicam.cs.ids.hackhub.service;
 
 import it.unicam.cs.ids.hackhub.model.*;
 import it.unicam.cs.ids.hackhub.repository.*;
-import org.springframework.beans.factory.annotation.*;
 import org.springframework.stereotype.*;
 import java.util.*;
 
 @Service
 public class UtenteService {
 
-    @Autowired
-    private UtenteRepository utenteRepository;
+    private final UtenteRepository utenteRepository;
 
-    // TODO aggiornare: diversi tipi di fallimenti
-    public Utente registraUtente(Utente utente) {
-        if (utenteRepository.findByEmail(utente.getEmail()).isPresent()) {
-            throw new RuntimeException("Email già in uso!");
-        }
+    public UtenteService(UtenteRepository utenteRepository) {
+        this.utenteRepository = utenteRepository;
+    }
+
+    public boolean esisteEmail(String email) {
+        return utenteRepository.existsByEmail(email);
+    }
+
+    public boolean esisteCodiceFiscale(String codiceFiscale) {
+        return utenteRepository.existsById(codiceFiscale);
+    }
+
+    public Utente salvaUtente(Utente utente) {
         return utenteRepository.save(utente);
     }
 
-    // TODO aggiornare: diversi tipi di fallimenti
-    public Utente login(String email, String password) {
-        Optional<Utente> utente = utenteRepository.findByEmail(email);
-        
-        if (utente.isPresent() && utente.get().getPassword().equals(password)) {
-             return utente.get();
-        } else {
-             throw new RuntimeException("Credenziali non valide");
-        }
+    public Optional<Utente> trovaPerEmail(String email) {
+        return utenteRepository.findByEmail(email);
     }
 
-    public Optional<Utente> ottieniUtente(Long id) {
-        return utenteRepository.findById(id);
-    }      
+    public Optional<Utente> trovaPerCodiceFiscale(String codiceFiscale) {
+        return utenteRepository.findById(codiceFiscale);
+    }
 }

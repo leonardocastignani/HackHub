@@ -2,38 +2,27 @@ package it.unicam.cs.ids.hackhub.service;
 
 import it.unicam.cs.ids.hackhub.model.*;
 import it.unicam.cs.ids.hackhub.repository.*;
-import org.springframework.beans.factory.annotation.*;
 import org.springframework.stereotype.*;
-
-import java.time.LocalDate;
 import java.util.*;
 
 @Service
 public class TeamService {
 
-    @Autowired
-    private TeamRepository teamRepository;
-    @Autowired
-    private UtenteRepository utenteRepository;
+    private final TeamRepository teamRepository;
 
-    public Team creaTeam(Team team, Long ownerId) {
-        Utente owner = utenteRepository.findById(ownerId)
-            .orElseThrow(() -> new RuntimeException("Utente owner non trovato"));
-
-        team.setOwner(owner);
-
-        if (team.getDataCreazione() == null) {
-            team.setDataCreazione(LocalDate.now());
-        }
-
-        if (team.getNumeroMembri() <= 0) {
-            team.setNumeroMembri(1);
-        }
-
-        return teamRepository.save(team);
+    public TeamService(TeamRepository teamRepository) {
+        this.teamRepository = teamRepository;
     }
 
-    public Optional<Team> ottieniTeam(Long id) {
+    public Optional<Team> trovaTeamPerId(Long id) {
         return teamRepository.findById(id);
+    }
+
+    public boolean esisteNomeTeam(String nomeTeam) {
+        return teamRepository.existsByNomeTeam(nomeTeam);
+    }
+
+    public Team salvaTeam(Team team) {
+        return teamRepository.save(team);
     }
 }

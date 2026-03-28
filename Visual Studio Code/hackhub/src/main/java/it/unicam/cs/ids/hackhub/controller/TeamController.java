@@ -1,8 +1,8 @@
 package it.unicam.cs.ids.hackhub.controller;
 
+import it.unicam.cs.ids.hackhub.dto.*;
 import it.unicam.cs.ids.hackhub.model.*;
 import it.unicam.cs.ids.hackhub.service.*;
-import org.springframework.beans.factory.annotation.*;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
@@ -10,25 +10,37 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/teams")
 public class TeamController {
 
-    @Autowired
-    private TeamService teamService;
+    private final HackHubSystem hackHubSystem;
 
-    @PostMapping
-    public ResponseEntity<?> creaNuovoTeam(
-            @RequestBody Team team,
-            @RequestParam Long ownerId) {
+    public TeamController(HackHubSystem hackHubSystem) {
+        this.hackHubSystem = hackHubSystem;
+    }
+
+    // ==========================
+    // ENDPOINT: Crea Nuovo Team
+    // ==========================
+    @PostMapping("/crea")
+    public ResponseEntity<?> creaTeam(@RequestBody CreaTeamRequest request) {
         try {
-            Team nuovoTeam = teamService.creaTeam(team, ownerId);
-            return ResponseEntity.ok(nuovoTeam);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            Team nuovoTeam = hackHubSystem.creaTeam(request.nomeTeam(), request.ownerCodiceFiscale());
+            return ResponseEntity.status(HttpStatus.CREATED).body(nuovoTeam);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Errore tecnico durante la creazione del team.");
         }
     }
 
+    // ===================================
+    // ENDPOINT: Visualizza Dettagli Team
+    // ===================================
     @GetMapping("/{id}")
-    public ResponseEntity<Team> getTeam(@PathVariable Long id) {
-        return teamService.ottieniTeam(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<?> getDettagliTeam(@PathVariable Long id) {
+        try {
+            Team team = hackHubSystem.visualizzaDettagliTeam(id);
+            return ResponseEntity.ok(team);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
     }
 }

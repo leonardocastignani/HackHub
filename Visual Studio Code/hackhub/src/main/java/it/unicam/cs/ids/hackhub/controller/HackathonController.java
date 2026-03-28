@@ -2,32 +2,37 @@ package it.unicam.cs.ids.hackhub.controller;
 
 import it.unicam.cs.ids.hackhub.model.*;
 import it.unicam.cs.ids.hackhub.service.*;
-import org.springframework.beans.factory.annotation.*;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
-import java.util.*;
 
 @RestController
 @RequestMapping("/api/hackathons")
 public class HackathonController {
 
-    @Autowired
-    private HackathonService hackathonService;
+    private final HackHubSystem hackHubSystem;
 
+    public HackathonController(HackHubSystem hackHubSystem) {
+        this.hackHubSystem = hackHubSystem;
+    }
+
+    // ======================================
+    // ENDPOINT: Visualizza Elenco Hackathon
+    // ======================================
     @GetMapping
-    public List<Hackathon> getHackathons() {
-        return hackathonService.ottieniTuttiHackathon();
+    public ResponseEntity<Iterable<Hackathon>> getElencoHackathon() {
+        return ResponseEntity.ok(hackHubSystem.visualizzaElencoHackathon());
     }
 
-    @PostMapping
-    public Hackathon nuovoHackathon(@RequestBody Hackathon hackathon) {
-        return hackathonService.creaHackathon(hackathon);
-    }
-
+    // ========================================
+    // ENDPOINT: Visualizza Dettagli Hackathon
+    // ========================================
     @GetMapping("/{id}")
-    public ResponseEntity<Hackathon> getHackathon(@PathVariable Long id) {
-        return hackathonService.ottieniHackathon(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<?> getDettagliHackathon(@PathVariable Long id) {
+        try {
+            Hackathon hackathon = hackHubSystem.visualizzaDettagliHackathon(id);
+            return ResponseEntity.ok(hackathon);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
     }
 }

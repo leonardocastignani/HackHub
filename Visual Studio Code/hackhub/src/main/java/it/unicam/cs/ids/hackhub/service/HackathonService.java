@@ -2,25 +2,23 @@ package it.unicam.cs.ids.hackhub.service;
 
 import it.unicam.cs.ids.hackhub.model.*;
 import it.unicam.cs.ids.hackhub.repository.*;
-import org.springframework.beans.factory.annotation.*;
 import org.springframework.stereotype.*;
 import java.util.*;
 
 @Service
 public class HackathonService {
 
-    @Autowired
-    private HackathonRepository hackathonRepository;
+    private final HackathonRepository hackathonRepository;
 
-    public Optional<Hackathon> ottieniHackathon(Long id) {
-        return hackathonRepository.findById(id);
+    public HackathonService(HackathonRepository hackathonRepository) {
+        this.hackathonRepository = hackathonRepository;
     }
 
-    public List<Hackathon> ottieniTuttiHackathon() {
+    public Iterable<Hackathon> ottieniTuttiHackathon() {
         return hackathonRepository.findAll();
     }
 
-    public Hackathon creaHackathon(Hackathon hackathon) {
-        return hackathonRepository.save(hackathon);
+    public Optional<Hackathon> ottieniDettagliHackathon(Long id) {
+        return hackathonRepository.findById(id);
     }
 }
