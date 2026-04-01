@@ -1,5 +1,6 @@
 package it.unicam.cs.ids.hackhub.model;
 
+import com.fasterxml.jackson.annotation.*;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.*;
@@ -27,7 +28,14 @@ public class Hackathon {
     private LocalDate scadenzaIscrizione;
     private LocalDate dataCreazione = LocalDate.now();
 
+    // Relazione: Un Hackathon è organizzato da 1 Organizzatore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "organizzatore_id")
+    @JsonIgnoreProperties({"hackathonOrganizzati", "hibernateLazyInitializer", "handler"})
+    private Organizzatore organizzatore;
+
     // Relazione: Un Hackathon ospita molti Team (0..*)
     @OneToMany(mappedBy = "hackathon", cascade = CascadeType.ALL)
-    private List<Team> teamsPartecipanti = new ArrayList<>();
+    @JsonIgnoreProperties({"hackathon", "hibernateLazyInitializer", "handler"})
+    private List<Team> teamsPartecipanti = new ArrayList<Team>();
 }

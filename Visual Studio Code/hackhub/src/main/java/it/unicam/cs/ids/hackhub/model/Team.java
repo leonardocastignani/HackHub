@@ -28,13 +28,14 @@ public class Team {
     @Column(nullable = false)
     private LocalDate dataCreazione = LocalDate.now();
 
-    // Relazione: Un team ha molti utenti (1..*)
+    // Relazione: Un team ha molti Membri del Team (1..*)
     @OneToMany(mappedBy = "team", cascade = CascadeType.ALL)
-    @JsonIgnoreProperties("team")
-    private List<Utente> membri = new ArrayList<>();
+    @JsonIgnoreProperties({"team", "invitiRicevuti", "invitiGenerati", "hibernateLazyInitializer", "handler"})
+    private List<MembroDelTeam> membri = new ArrayList<MembroDelTeam>();
 
     // Relazione: Un team partecipa a un Hackathon (0..1)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "hackathon_id")
+    @JsonIgnoreProperties({"teamsPartecipanti", "hibernateLazyInitializer", "handler"})
     private Hackathon hackathon;
 }

@@ -3,10 +3,15 @@ package it.unicam.cs.ids.hackhub.model;
 import com.fasterxml.jackson.annotation.*;
 import jakarta.persistence.*;
 import lombok.*;
+import java.util.*;
 
 @Entity
+@Table(name = "utenti")
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "ruolo", discriminatorType = DiscriminatorType.STRING)
+@DiscriminatorValue("UTENTE_BASE")
 @Data
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor
 @AllArgsConstructor
 public class Utente {
 
@@ -26,11 +31,10 @@ public class Utente {
     @Column(nullable = false)
     private String password;
 
-    // Relazione: Un utente appartiene a un Team (0..1)
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "team_id")
-    @JsonIgnoreProperties("membri")
-    private Team team;
+    // Relazione: Un utente riceve molti inviti (0..*)
+    @OneToMany(mappedBy = "destinatario", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties({"destinatario", "hibernateLazyInitializer", "handler"})
+    private List<Invito> invitiRicevuti = new ArrayList<Invito>();
 
     // Costruttore privato usato dal Builder
     private Utente(UtenteBuilder builder) {
