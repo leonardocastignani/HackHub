@@ -15,14 +15,14 @@ public class TeamService {
     }
 
     public Optional<Team> trovaTeamPerId(Long id) {
-        return teamRepository.findById(id);
+        return this.teamRepository.findById(id);
     }
 
     public boolean esisteNomeTeam(String nomeTeam) {
-        return teamRepository.existsByNomeTeam(nomeTeam);
+        return this.teamRepository.existsByNomeTeam(nomeTeam);
     }
 
     public Team salvaTeam(Team team) {
-        return teamRepository.save(team);
+        return this.teamRepository.save(team);
     }
 }

@@ -22,7 +22,7 @@ public class TeamController {
     @PostMapping("/crea")
     public ResponseEntity<?> creaTeam(@RequestBody CreaTeamRequest request) {
         try {
-            Team nuovoTeam = hackHubSystem.creaTeam(request.nomeTeam(), request.ownerCodiceFiscale());
+            Team nuovoTeam = this.hackHubSystem.creaTeam(request.nomeTeam(), request.ownerCodiceFiscale());
             return ResponseEntity.status(HttpStatus.CREATED).body(nuovoTeam);
         } catch (IllegalArgumentException | IllegalStateException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -37,10 +37,30 @@ public class TeamController {
     @GetMapping("/{id}")
     public ResponseEntity<?> getDettagliTeam(@PathVariable Long id) {
         try {
-            Team team = hackHubSystem.visualizzaDettagliTeam(id);
+            Team team = this.hackHubSystem.visualizzaDettagliTeam(id);
             return ResponseEntity.ok(team);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
+    }
+
+    // =================================
+    // ENDPOINT: Iscrivi Team Hackathon
+    // =================================
+    @PostMapping("/{idTeam}/iscrivi/{idHackathon}")
+    public ResponseEntity<?> iscriviTeamHackathon(
+            @PathVariable Long idTeam, 
+            @PathVariable Long idHackathon, 
+            @RequestBody IscriviTeamRequest request) {
+        try {
+            Team teamIscritto = this.hackHubSystem.iscriviTeamHackathon(
+                    idTeam, 
+                    idHackathon, 
+                    request.codiceFiscaleRichiedente()
+            );
+            return ResponseEntity.ok(teamIscritto);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
 }

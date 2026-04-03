@@ -15,10 +15,14 @@ public class HackathonService {
     }
 
     public Iterable<Hackathon> ottieniTuttiHackathon() {
-        return hackathonRepository.findAll();
+        return this.hackathonRepository.findAll();
     }
 
     public Optional<Hackathon> ottieniDettagliHackathon(Long id) {
-        return hackathonRepository.findById(id);
+        return this.hackathonRepository.findById(id);
+    }
+
+    public Hackathon salvaHackathon(Hackathon hackathon) {
+        return this.hackathonRepository.save(hackathon);
     }
 }

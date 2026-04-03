@@ -22,7 +22,7 @@ public class AuthController {
     @PostMapping("/registra")
     public ResponseEntity<?> registraUtente(@RequestBody RegistrazioneRequest request) {
         try {
-            Utente nuovoUtente = hackHubSystem.registraUtente(
+            Utente nuovoUtente = this.hackHubSystem.registraUtente(
                 request.codiceFiscale(),
                 request.nome(),
                 request.cognome(),
@@ -43,7 +43,7 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         try {
-            Utente utenteLoggato = hackHubSystem.login(request.email(), request.password());
+            Utente utenteLoggato = this.hackHubSystem.login(request.email(), request.password());
             return ResponseEntity.ok(utenteLoggato);
         } catch (IllegalArgumentException | IllegalStateException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());

@@ -1,5 +1,6 @@
 package it.unicam.cs.ids.hackhub.controller;
 
+import it.unicam.cs.ids.hackhub.dto.*;
 import it.unicam.cs.ids.hackhub.model.*;
 import it.unicam.cs.ids.hackhub.service.*;
 import org.springframework.http.*;
@@ -20,7 +21,7 @@ public class HackathonController {
     // ======================================
     @GetMapping
     public ResponseEntity<Iterable<Hackathon>> getElencoHackathon() {
-        return ResponseEntity.ok(hackHubSystem.visualizzaElencoHackathon());
+        return ResponseEntity.ok(this.hackHubSystem.visualizzaElencoHackathon());
     }
 
     // ========================================
@@ -29,10 +30,29 @@ public class HackathonController {
     @GetMapping("/{id}")
     public ResponseEntity<?> getDettagliHackathon(@PathVariable Long id) {
         try {
-            Hackathon hackathon = hackHubSystem.visualizzaDettagliHackathon(id);
+            Hackathon hackathon = this.hackHubSystem.visualizzaDettagliHackathon(id);
             return ResponseEntity.ok(hackathon);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
+    }
+
+    // =========================
+    // ENDPOINT: Crea Hackathon
+    // =========================
+    @PostMapping("/crea")
+    public ResponseEntity<?> creaHackathon(@RequestBody CreaHackathonRequest request) {
+        try {
+            Hackathon nuovoHackathon = this.hackHubSystem.creaHackathon(
+                    request.nome(),
+                    request.descrizione(),
+                    request.dataInizio(),
+                    request.dataFine(),
+                    request.codiceFiscaleOrganizzatore()
+            );
+            return ResponseEntity.status(HttpStatus.CREATED).body(nuovoHackathon);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
 }
