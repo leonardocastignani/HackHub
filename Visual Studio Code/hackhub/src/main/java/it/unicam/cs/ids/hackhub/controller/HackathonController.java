@@ -20,18 +20,27 @@ public class HackathonController {
     // ENDPOINT: Visualizza Elenco Hackathon
     // ======================================
     @GetMapping
-    public ResponseEntity<Iterable<Hackathon>> getElencoHackathon() {
-        return ResponseEntity.ok(this.hackHubSystem.visualizzaElencoHackathon());
+    public ResponseEntity<?> getElencoHackathon() {
+        Iterable<Hackathon> hackathons = this.hackHubSystem.visualizzaElencoHackathon();
+
+        if (!hackathons.iterator().hasNext()) {
+            return ResponseEntity.status(HttpStatus.OK)
+                    .body("Al momento non sono disponibili hackathon");
+        }
+        
+        return ResponseEntity.ok(hackathons);
     }
 
     // ========================================
     // ENDPOINT: Visualizza Dettagli Hackathon
     // ========================================
     @GetMapping("/{id}")
-    public ResponseEntity<?> getDettagliHackathon(@PathVariable Long id) {
+    public ResponseEntity<?> getDettagliHackathon(
+            @PathVariable Long id, 
+            @RequestParam(required = false) String codiceFiscaleUtente) {
         try {
-            Hackathon hackathon = this.hackHubSystem.visualizzaDettagliHackathon(id);
-            return ResponseEntity.ok(hackathon);
+            HackathonDettagliResponse response = this.hackHubSystem.visualizzaDettagliHackathon(id, codiceFiscaleUtente);
+            return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
@@ -46,6 +55,10 @@ public class HackathonController {
             Hackathon nuovoHackathon = this.hackHubSystem.creaHackathon(
                     request.nome(),
                     request.descrizione(),
+                    request.luogo(),
+                    request.regolamento(),
+                    request.dimensioneMassimaTeam(),
+                    request.premio(),
                     request.dataInizio(),
                     request.dataFine(),
                     request.codiceFiscaleOrganizzatore()

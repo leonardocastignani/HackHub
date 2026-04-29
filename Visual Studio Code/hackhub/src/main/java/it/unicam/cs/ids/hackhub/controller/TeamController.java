@@ -35,12 +35,16 @@ public class TeamController {
     // ENDPOINT: Visualizza Dettagli Team
     // ===================================
     @GetMapping("/{id}")
-    public ResponseEntity<?> getDettagliTeam(@PathVariable Long id) {
+    public ResponseEntity<?> getDettagliTeam(
+            @PathVariable Long id, 
+            @RequestParam(required = false) String codiceFiscaleRichiedente) {
         try {
-            Team team = this.hackHubSystem.visualizzaDettagliTeam(id);
+            Team team = this.hackHubSystem.visualizzaDettagliTeam(id, codiceFiscaleRichiedente);
             return ResponseEntity.ok(team);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
         }
     }
 

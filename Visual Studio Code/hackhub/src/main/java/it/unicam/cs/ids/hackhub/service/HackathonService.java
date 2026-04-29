@@ -25,4 +25,16 @@ public class HackathonService {
     public Hackathon salvaHackathon(Hackathon hackathon) {
         return this.hackathonRepository.save(hackathon);
     }
+
+    public void assegnaGiudiceAHackathon(Long idHackathon, String codiceFiscale) {
+        hackathonRepository.assegnaGiudiceAHackathon(idHackathon, codiceFiscale);
+    }
+
+    public void aggiungiMentoreAHackathon(Long idHackathon, String codiceFiscale) {
+        hackathonRepository.aggiungiMentoreAHackathon(idHackathon, codiceFiscale);
+    }
+
+    public void rimuoviMentoreDaHackathon(Long idHackathon, String codiceFiscale) {
+        hackathonRepository.rimuoviMentoreDaHackathon(idHackathon, codiceFiscale);
+    }
 }

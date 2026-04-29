@@ -38,4 +38,16 @@ public class UtenteService {
     public void promuoviAMembroDelTeam(String codiceFiscale, Long teamId) {
         this.utenteRepository.promuoviAMembroDelTeam(codiceFiscale, teamId, LocalDate.now());
     }
+     
+    public void promuoviAGiudice(String codiceFiscale) {
+        this.utenteRepository.promuoviAGiudice(codiceFiscale);
+    }
+
+    public void promuoviAMentore(String codiceFiscale) {
+        this.utenteRepository.promuoviAMentore(codiceFiscale);
+    }
+
+    public void retrocediAUtenteBase(String codiceFiscale) {
+        this.utenteRepository.retrocediAUtenteBase(codiceFiscale);
+    }
 }
