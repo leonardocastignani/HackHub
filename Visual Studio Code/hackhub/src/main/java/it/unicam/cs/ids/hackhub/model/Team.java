@@ -38,4 +38,9 @@ public class Team {
     @JoinColumn(name = "hackathon_id")
     @JsonIgnoreProperties({"teamsPartecipanti", "hibernateLazyInitializer", "handler"})
     private Hackathon hackathon;
+
+    // Relazione: Un team può avere diverse sottomissioni
+    @OneToMany(mappedBy = "team", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties({"team", "hibernateLazyInitializer", "handler"})
+    private List<Sottomissione> sottomissioni = new ArrayList<Sottomissione>();
 }

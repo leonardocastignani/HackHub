@@ -22,6 +22,16 @@ public class Hackathon {
     @Column(length = 500)
     private String descrizione;
 
+    @Column(nullable = false)
+    private String luogo;
+
+    @Column(length = 2000)
+    private String regolamento;
+
+    private Integer dimensioneMassimaTeam;
+
+    private String premio;
+
     private LocalDate dataInizio;
     private LocalDate dataFine;
     private String stato;
@@ -33,6 +43,22 @@ public class Hackathon {
     @JoinColumn(name = "organizzatore_id")
     @JsonIgnoreProperties({"hackathonOrganizzati", "hibernateLazyInitializer", "handler"})
     private Organizzatore organizzatore;
+
+    // Relazione: Un Hackathon ha 1 Giudice
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "giudice_id")
+    @JsonIgnoreProperties({"hackathonsGiudicati", "valutazioniEffettuate", "hibernateLazyInitializer", "handler"})
+    private Giudice giudice;
+
+    // Relazione: Un Hackathon ha fino a 2 Mentori
+    @ManyToMany
+    @JoinTable(
+        name = "hackathon_mentori",
+        joinColumns = @JoinColumn(name = "hackathon_id"),
+        inverseJoinColumns = @JoinColumn(name = "mentore_id")
+    )
+    @JsonIgnoreProperties({"hackathonsSeguiti", "hibernateLazyInitializer", "handler"})
+    private List<Mentore> mentori = new ArrayList<>();
 
     // Relazione: Un Hackathon ospita molti Team (0..*)
     @OneToMany(mappedBy = "hackathon", cascade = CascadeType.ALL)

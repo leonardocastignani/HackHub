@@ -31,6 +31,9 @@ public class Utente {
     @Column(nullable = false)
     private String password;
 
+    @Column(nullable = false)
+    private String stato = "ATTIVO";
+
     // Relazione: Un utente riceve molti inviti (0..*)
     @OneToMany(mappedBy = "destinatario", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnoreProperties({"destinatario", "hibernateLazyInitializer", "handler"})
@@ -43,6 +46,7 @@ public class Utente {
         this.cognome = builder.cognome;
         this.email = builder.email;
         this.password = builder.password;
+        this.stato = builder.stato;
     }
 
     // --- IMPLEMENTAZIONE DESIGN PATTERN: BUILDER ---
@@ -52,6 +56,7 @@ public class Utente {
         private String cognome;
         private String email;
         private String password;
+        private String stato = "ATTIVO";
 
         public UtenteBuilder setCodiceFiscale(String codiceFiscale) {
             this.codiceFiscale = codiceFiscale;
@@ -78,6 +83,11 @@ public class Utente {
             return this;
         }
 
+        public UtenteBuilder setStato(String stato) {
+            this.stato = stato;
+            return this;
+        }
+
         public Utente build() {
             if (this.codiceFiscale == null || this.codiceFiscale.trim().isEmpty() ||
                 this.nome == null || this.nome.trim().isEmpty() ||
@@ -94,6 +104,10 @@ public class Utente {
 
             if (!this.email.contains("@")) {
                 throw new IllegalArgumentException("Dati non corretti: formato email non valido.");
+            }
+
+            if (!"ATTIVO".equals(this.stato) && !"DISATTIVO".equals(this.stato)) {
+                throw new IllegalArgumentException("Dati non corretti: lo stato deve essere ATTIVO o DISATTIVO.");
             }
 
             return new Utente(this);
