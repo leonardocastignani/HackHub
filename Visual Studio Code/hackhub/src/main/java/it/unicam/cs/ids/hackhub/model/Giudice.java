@@ -15,7 +15,7 @@ public class Giudice extends MembroDelloStaff {
     @JsonIgnoreProperties({"giudice", "hibernateLazyInitializer", "handler"})
     private List<Valutazione> valutazioniEffettuate = new ArrayList<Valutazione>();
 
-    // Relazione inversa: Un Giudice può giudicare diversi Hackathon
+    // Relazione: Un Giudice può giudicare diversi Hackathon
     @OneToMany(mappedBy = "giudice", cascade = CascadeType.ALL)
     @JsonIgnoreProperties({"giudice", "teamsPartecipanti", "organizzatore", "hibernateLazyInitializer", "handler"})
     private List<Hackathon> hackathonsGiudicati = new ArrayList<Hackathon>();

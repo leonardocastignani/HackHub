@@ -1,5 +1,6 @@
 package it.unicam.cs.ids.hackhub.model;
 
+import it.unicam.cs.ids.hackhub.model.enums.*;
 import com.fasterxml.jackson.annotation.*;
 import jakarta.persistence.*;
 import lombok.*;
@@ -19,8 +20,9 @@ public class Invito {
     @Column(nullable = false)
     private LocalDate dataEmissione = LocalDate.now();
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String stato = "IN ATTESA"; 
+    private StatoInvito stato = StatoInvito.IN_ATTESA;
 
     private LocalDate dataStato = LocalDate.now();
 

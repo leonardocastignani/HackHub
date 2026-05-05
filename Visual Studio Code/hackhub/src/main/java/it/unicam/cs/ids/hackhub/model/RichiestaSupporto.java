@@ -1,5 +1,6 @@
 package it.unicam.cs.ids.hackhub.model;
 
+import it.unicam.cs.ids.hackhub.model.enums.*;
 import com.fasterxml.jackson.annotation.*;
 import jakarta.persistence.*;
 import lombok.*;
@@ -28,8 +29,9 @@ public class RichiestaSupporto {
     @Column
     private LocalDate dataRisposta;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String stato = "IN_ATTESA";
+    private StatoRichiesta stato = StatoRichiesta.IN_ATTESA;
 
     // Relazione: Inviata da 1 Membro del Team
     @ManyToOne(fetch = FetchType.LAZY)

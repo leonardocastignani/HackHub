@@ -1,5 +1,6 @@
 package it.unicam.cs.ids.hackhub.model;
 
+import it.unicam.cs.ids.hackhub.model.enums.*;
 import com.fasterxml.jackson.annotation.*;
 import jakarta.persistence.*;
 import lombok.*;
@@ -34,7 +35,11 @@ public class Hackathon {
 
     private LocalDate dataInizio;
     private LocalDate dataFine;
-    private String stato;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private StatoHackathon stato;
+    
     private LocalDate scadenzaIscrizione;
     private LocalDate dataCreazione = LocalDate.now();
 
@@ -58,10 +63,16 @@ public class Hackathon {
         inverseJoinColumns = @JoinColumn(name = "mentore_id")
     )
     @JsonIgnoreProperties({"hackathonsSeguiti", "hibernateLazyInitializer", "handler"})
-    private List<Mentore> mentori = new ArrayList<>();
+    private List<Mentore> mentori = new ArrayList<Mentore>();
 
     // Relazione: Un Hackathon ospita molti Team (0..*)
     @OneToMany(mappedBy = "hackathon", cascade = CascadeType.ALL)
     @JsonIgnoreProperties({"hackathon", "hibernateLazyInitializer", "handler"})
     private List<Team> teamsPartecipanti = new ArrayList<Team>();
+
+    // Relazione: Un Hackathon ha 1 Team vincitore (0..1)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "vincitore_id")
+    @JsonIgnoreProperties({"hackathon", "membri", "sottomissioni", "violazioni", "hibernateLazyInitializer", "handler"})
+    private Team vincitore;
 }

@@ -1,6 +1,7 @@
 package it.unicam.cs.ids.hackhub.service;
 
 import it.unicam.cs.ids.hackhub.model.*;
+import it.unicam.cs.ids.hackhub.model.enums.*;
 import it.unicam.cs.ids.hackhub.repository.*;
 import org.springframework.stereotype.*;
 import java.util.*;
@@ -23,6 +24,11 @@ public class TeamService {
     }
 
     public Team salvaTeam(Team team) {
+        return this.teamRepository.save(team);
+    }
+
+    public Team squalificaTeam(Team team) {
+        team.setStato(StatoTeam.SQUALIFICATO);
         return this.teamRepository.save(team);
     }
 }

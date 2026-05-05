@@ -21,50 +21,32 @@ public class TeamController {
     // ==========================
     @PostMapping("/crea")
     public ResponseEntity<?> creaTeam(@RequestBody CreaTeamRequest request) {
-        try {
-            Team nuovoTeam = this.hackHubSystem.creaTeam(request.nomeTeam(), request.ownerCodiceFiscale());
-            return ResponseEntity.status(HttpStatus.CREATED).body(nuovoTeam);
-        } catch (IllegalArgumentException | IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Errore tecnico durante la creazione del team.");
-        }
+        Team nuovoTeam = this.hackHubSystem.creaTeam(request.nomeTeam(), request.ownerCodiceFiscale());
+        
+        return ResponseEntity.status(HttpStatus.CREATED).body(nuovoTeam);
     }
 
     // ===================================
     // ENDPOINT: Visualizza Dettagli Team
     // ===================================
     @GetMapping("/{id}")
-    public ResponseEntity<?> getDettagliTeam(
-            @PathVariable Long id, 
-            @RequestParam(required = false) String codiceFiscaleRichiedente) {
-        try {
-            Team team = this.hackHubSystem.visualizzaDettagliTeam(id, codiceFiscaleRichiedente);
-            return ResponseEntity.ok(team);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-        } catch (IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
-        }
+    public ResponseEntity<?> getDettagliTeam(@PathVariable Long id, @RequestParam(required = false) String codiceFiscaleRichiedente) {
+        Team team = this.hackHubSystem.visualizzaDettagliTeam(id, codiceFiscaleRichiedente);
+        
+        return ResponseEntity.ok(team);
     }
 
     // =================================
     // ENDPOINT: Iscrivi Team Hackathon
     // =================================
     @PostMapping("/{idTeam}/iscrivi/{idHackathon}")
-    public ResponseEntity<?> iscriviTeamHackathon(
-            @PathVariable Long idTeam, 
-            @PathVariable Long idHackathon, 
-            @RequestBody IscriviTeamRequest request) {
-        try {
-            Team teamIscritto = this.hackHubSystem.iscriviTeamHackathon(
-                    idTeam, 
-                    idHackathon, 
-                    request.codiceFiscaleRichiedente()
-            );
-            return ResponseEntity.ok(teamIscritto);
-        } catch (IllegalArgumentException | IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        }
+    public ResponseEntity<?> iscriviTeamHackathon(@PathVariable Long idTeam, @PathVariable Long idHackathon, @RequestBody IscriviTeamRequest request) {
+        Team teamIscritto = this.hackHubSystem.iscriviTeamHackathon(
+            idTeam, 
+            idHackathon, 
+            request.codiceFiscaleRichiedente()
+        );
+
+        return ResponseEntity.ok(teamIscritto);
     }
 }

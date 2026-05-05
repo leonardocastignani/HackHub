@@ -1,5 +1,6 @@
 package it.unicam.cs.ids.hackhub.model;
 
+import it.unicam.cs.ids.hackhub.model.enums.*;
 import com.fasterxml.jackson.annotation.*;
 import jakarta.persistence.*;
 import lombok.*;
@@ -31,8 +32,12 @@ public class Utente {
     @Column(nullable = false)
     private String password;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String stato = "ATTIVO";
+    private StatoUtente stato = StatoUtente.ATTIVO;
+
+    @Column(nullable = false)
+    private boolean isLogged = false;
 
     // Relazione: Un utente riceve molti inviti (0..*)
     @OneToMany(mappedBy = "destinatario", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -40,13 +45,14 @@ public class Utente {
     private List<Invito> invitiRicevuti = new ArrayList<Invito>();
 
     // Costruttore privato usato dal Builder
-    private Utente(UtenteBuilder builder) {
+    protected Utente(UtenteBuilder builder) {
         this.codiceFiscale = builder.codiceFiscale;
         this.nome = builder.nome;
         this.cognome = builder.cognome;
         this.email = builder.email;
         this.password = builder.password;
         this.stato = builder.stato;
+        this.isLogged = builder.isLogged;
     }
 
     // --- IMPLEMENTAZIONE DESIGN PATTERN: BUILDER ---
@@ -56,7 +62,8 @@ public class Utente {
         private String cognome;
         private String email;
         private String password;
-        private String stato = "ATTIVO";
+        private StatoUtente stato = StatoUtente.ATTIVO;
+        private boolean isLogged = false;
 
         public UtenteBuilder setCodiceFiscale(String codiceFiscale) {
             this.codiceFiscale = codiceFiscale;
@@ -83,8 +90,13 @@ public class Utente {
             return this;
         }
 
-        public UtenteBuilder setStato(String stato) {
+        public UtenteBuilder setStato(StatoUtente stato) {
             this.stato = stato;
+            return this;
+        }
+
+        public UtenteBuilder setIsLogged(boolean isLogged) {
+            this.isLogged = isLogged;
             return this;
         }
 
@@ -104,10 +116,6 @@ public class Utente {
 
             if (!this.email.contains("@")) {
                 throw new IllegalArgumentException("Dati non corretti: formato email non valido.");
-            }
-
-            if (!"ATTIVO".equals(this.stato) && !"DISATTIVO".equals(this.stato)) {
-                throw new IllegalArgumentException("Dati non corretti: lo stato deve essere ATTIVO o DISATTIVO.");
             }
 
             return new Utente(this);

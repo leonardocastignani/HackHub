@@ -21,16 +21,13 @@ public class InvitoController {
     // ========================
     @PostMapping("/invia")
     public ResponseEntity<?> invitaUtente(@RequestBody InvitaUtenteRequest request) {
-        try {
-            Invito invito = this.hackHubSystem.invitaUtente(
-                    request.emailUtente(), 
-                    request.idTeam(), 
-                    request.codiceFiscaleOwner()
-            );
-            return ResponseEntity.status(HttpStatus.CREATED).body(invito);
-        } catch (IllegalArgumentException | IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        }
+        Invito invito = this.hackHubSystem.invitaUtente(
+            request.emailUtente(), 
+            request.idTeam(), 
+            request.codiceFiscaleOwner()
+        );
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(invito);
     }
 
     // ===============================
@@ -38,15 +35,12 @@ public class InvitoController {
     // ===============================
     @PostMapping("/{id}/gestisci")
     public ResponseEntity<?> gestisciInvito(@PathVariable Long id, @RequestBody GestisciInvitoRequest request) {
-        try {
-            Invito invitoGestito = this.hackHubSystem.gestisciInvito(
-                    id, 
-                    request.azione(), 
-                    request.codiceFiscaleUtenteLoggato()
-            );
-            return ResponseEntity.ok(invitoGestito);
-        } catch (IllegalArgumentException | IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        }
+        Invito invitoGestito = this.hackHubSystem.gestisciInvito(
+            id, 
+            request.azione(), 
+            request.codiceFiscaleUtenteLoggato()
+        );
+        
+        return ResponseEntity.ok(invitoGestito);
     }
 }

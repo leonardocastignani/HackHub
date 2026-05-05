@@ -22,54 +22,40 @@ public class SottomissioneController {
     // ===============================
     @PostMapping("/carica")
     public ResponseEntity<?> caricaSottomissione(@RequestBody CaricaSottomissioneRequest request) {
-        try {
-            Sottomissione sottomissione = hackHubSystem.caricaSottomissione(
-                    request.idTeam(),
-                    request.linkProgetto(),
-                    request.codiceFiscaleRichiedente()
-            );
-            return ResponseEntity.status(HttpStatus.CREATED).body(sottomissione);
-        } catch (IllegalArgumentException | IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        }
+        Sottomissione sottomissione = hackHubSystem.caricaSottomissione(
+            request.idTeam(),
+            request.linkProgetto(),
+            request.codiceFiscaleRichiedente()
+        );
+        
+        return ResponseEntity.status(HttpStatus.CREATED).body(sottomissione);
     }
 
     // =================================
     // ENDPOINT: Aggiorna Sottomissione
     // =================================
     @PutMapping("/{id}/aggiorna")
-    public ResponseEntity<?> aggiornaSottomissione(
-            @PathVariable Long id, 
-            @RequestBody AggiornaSottomissioneRequest request) {
-        try {
-            Sottomissione sottomissione = hackHubSystem.aggiornaSottomissione(
-                    id,
-                    request.nuovoLink(),
-                    request.codiceFiscaleRichiedente()
-            );
-            return ResponseEntity.ok(sottomissione);
-        } catch (IllegalArgumentException | IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        }
+    public ResponseEntity<?> aggiornaSottomissione(@PathVariable Long id, @RequestBody AggiornaSottomissioneRequest request) {
+        Sottomissione sottomissione = hackHubSystem.aggiornaSottomissione(
+            id,
+            request.nuovoLink(),
+            request.codiceFiscaleRichiedente()
+        );
+
+        return ResponseEntity.ok(sottomissione);
     }
 
     // ====================================================
     // ENDPOINT: Visualizza Stato e Dettagli Sottomissione
     // ====================================================
     @GetMapping("/team/{idTeam}")
-    public ResponseEntity<?> visualizzaSottomissioniTeam(
-            @PathVariable Long idTeam, 
-            @RequestParam(required = false) String codiceFiscaleRichiedente) {
-        try {
-            List<Sottomissione> sottomissioni = this.hackHubSystem.visualizzaSottomissioniTeam(idTeam, codiceFiscaleRichiedente);
+    public ResponseEntity<?> visualizzaSottomissioniTeam(@PathVariable Long idTeam, @RequestParam(required = false) String codiceFiscaleRichiedente) {
+        List<Sottomissione> sottomissioni = this.hackHubSystem.visualizzaSottomissioniTeam(idTeam, codiceFiscaleRichiedente);
 
-            if (sottomissioni.isEmpty()) {
-                return ResponseEntity.ok("Nessuna sottomissione trovata per il team specificato.");
-            }
-            
-            return ResponseEntity.ok(sottomissioni);
-        } catch (IllegalArgumentException | IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        if (sottomissioni.isEmpty()) {
+            return ResponseEntity.ok("Nessuna sottomissione trovata per il team specificato.");
         }
+            
+        return ResponseEntity.ok(sottomissioni);
     }
 }

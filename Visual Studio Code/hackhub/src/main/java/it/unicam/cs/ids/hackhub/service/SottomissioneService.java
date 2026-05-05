@@ -1,6 +1,7 @@
 package it.unicam.cs.ids.hackhub.service;
 
 import it.unicam.cs.ids.hackhub.model.*;
+import it.unicam.cs.ids.hackhub.model.enums.*;
 import it.unicam.cs.ids.hackhub.repository.*;
 import org.springframework.stereotype.*;
 import java.util.*;
@@ -24,5 +25,9 @@ public class SottomissioneService {
 
     public List<Sottomissione> trovaPerHackathon(Long idHackathon) {
         return sottomissioneRepository.findByTeam_Hackathon_Id(idHackathon);
+    }
+
+    public long contaSottomissioniAmmissibiliNonValutate(Long idHackathon, StatoTeam statoSqualificato) {
+        return sottomissioneRepository.contaSottomissioniAmmissibiliNonValutate(idHackathon, statoSqualificato);
     }
 }

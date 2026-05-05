@@ -21,20 +21,15 @@ public class AuthController {
     // =====================================
     @PostMapping("/registra")
     public ResponseEntity<?> registraUtente(@RequestBody RegistrazioneRequest request) {
-        try {
-            Utente nuovoUtente = this.hackHubSystem.registraUtente(
-                request.codiceFiscale(),
-                request.nome(),
-                request.cognome(),
-                request.email(),
-                request.password()
-            );
-            return ResponseEntity.status(HttpStatus.CREATED).body(nuovoUtente);
-        } catch (IllegalArgumentException | IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Errore tecnico del server.");
-        }
+        Utente nuovoUtente = this.hackHubSystem.registraUtente(
+            request.codiceFiscale(),
+            request.nome(),
+            request.cognome(),
+            request.email(),
+            request.password()
+        );
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(nuovoUtente);
     }
 
     // ================
@@ -42,11 +37,18 @@ public class AuthController {
     // ================
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
-        try {
-            Utente utenteLoggato = this.hackHubSystem.login(request.email(), request.password());
-            return ResponseEntity.ok(utenteLoggato);
-        } catch (IllegalArgumentException | IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
-        }
+        Utente utenteLoggato = this.hackHubSystem.login(request.email(), request.password());
+        
+        return ResponseEntity.ok(utenteLoggato);
+    }
+
+    // =================
+    // ENDPOINT: Logout
+    // =================
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(@RequestParam String codiceFiscale) {
+        this.hackHubSystem.logout(codiceFiscale);
+        
+        return ResponseEntity.ok("Sessione terminata con successo. Reindirizzamento alla Home...");
     }
 }

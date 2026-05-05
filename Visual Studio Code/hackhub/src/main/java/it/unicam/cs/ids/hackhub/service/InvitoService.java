@@ -1,6 +1,7 @@
 package it.unicam.cs.ids.hackhub.service;
 
 import it.unicam.cs.ids.hackhub.model.*;
+import it.unicam.cs.ids.hackhub.model.enums.*;
 import it.unicam.cs.ids.hackhub.repository.*;
 import org.springframework.stereotype.*;
 import java.util.*;
@@ -24,7 +25,9 @@ public class InvitoService {
 
     public boolean esisteInvitoInAttesa(String utenteCodiceFiscale, Long teamId) {
         return this.invitoRepository.existsByDestinatario_CodiceFiscaleAndMittente_Team_CodiceTeamAndStato(
-                utenteCodiceFiscale, teamId, "IN ATTESA"
+                utenteCodiceFiscale,
+                teamId,
+                StatoInvito.IN_ATTESA
         );
     }
 }

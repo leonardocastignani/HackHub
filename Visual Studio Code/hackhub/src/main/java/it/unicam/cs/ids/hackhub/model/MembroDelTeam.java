@@ -30,5 +30,5 @@ public class MembroDelTeam extends Utente {
     // Relazione: Un Membro invia molte Richieste di Supporto
     @OneToMany(mappedBy = "mittente", cascade = CascadeType.ALL)
     @JsonIgnoreProperties({"mittente", "hibernateLazyInitializer", "handler"})
-    private List<RichiestaSupporto> richiesteSupporto = new ArrayList<>();
+    private List<RichiestaSupporto> richiesteSupporto = new ArrayList<RichiestaSupporto>();
 }

@@ -7,6 +7,7 @@ public record CreaHackathonRequest(
     String descrizione, 
     LocalDate dataInizio, 
     LocalDate dataFine,
+    LocalDate scadenzaIscrizione,
     String luogo,
     String regolamento,
     Integer dimensioneMassimaTeam,

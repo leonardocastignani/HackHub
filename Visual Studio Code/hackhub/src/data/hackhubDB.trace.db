@@ -1,3 +1,0 @@
-2026-04-28 20:39:48.455405+02:00 jdbc[3]: exception
-org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "HACKATHONS" not found; SQL statement:
-UPDATE hackathons SET giudice_id = ? WHERE id = ? [42102-240]

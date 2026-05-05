@@ -20,16 +20,13 @@ public class GestioneStaffController {
     // =========================
     @PostMapping("/nomina-giudice")
     public ResponseEntity<?> nominaGiudice(@RequestBody NominaGiudiceRequest request) {
-        try {
-            this.hackHubSystem.nominaGiudice(
-                request.idHackathon(),
-                request.codiceFiscaleUtente(),
-                request.codiceFiscaleOrganizzatore()
-            );
-            return ResponseEntity.ok("Utente promosso a Giudice con successo.");
-        } catch (IllegalArgumentException | IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        }
+        this.hackHubSystem.nominaGiudice(
+            request.idHackathon(),
+            request.codiceFiscaleUtente(),
+            request.codiceFiscaleOrganizzatore()
+        );
+
+        return ResponseEntity.ok("Utente promosso a Giudice con successo.");
     }
 
     // =========================
@@ -37,16 +34,13 @@ public class GestioneStaffController {
     // =========================
     @PostMapping("/nomina-mentore")
     public ResponseEntity<?> nominaMentore(@RequestBody NominaMentoreRequest request) {
-        try {
-            this.hackHubSystem.nominaMentore(
-                request.idHackathon(),
-                request.codiceFiscaleNuovoMentore(),
-                request.codiceFiscaleVecchioMentore(), // null se non è sostituzione
-                request.codiceFiscaleOrganizzatore()
-            );
-            return ResponseEntity.ok("Operazione sui Mentori completata con successo.");
-        } catch (IllegalArgumentException | IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        }
+        this.hackHubSystem.nominaMentore(
+            request.idHackathon(),
+            request.codiceFiscaleNuovoMentore(),
+            request.codiceFiscaleVecchioMentore(), // null se non è sostituzione
+            request.codiceFiscaleOrganizzatore()
+        );
+        
+        return ResponseEntity.ok("Operazione sui Mentori completata con successo.");
     }
 }

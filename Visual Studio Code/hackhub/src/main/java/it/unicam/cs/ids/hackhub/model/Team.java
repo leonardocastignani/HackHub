@@ -1,5 +1,6 @@
 package it.unicam.cs.ids.hackhub.model;
 
+import it.unicam.cs.ids.hackhub.model.enums.*;
 import com.fasterxml.jackson.annotation.*;
 import jakarta.persistence.*;
 import lombok.*;
@@ -28,6 +29,10 @@ public class Team {
     @Column(nullable = false)
     private LocalDate dataCreazione = LocalDate.now();
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private StatoTeam stato = StatoTeam.ATTIVO;
+
     // Relazione: Un team ha molti Membri del Team (1..*)
     @OneToMany(mappedBy = "team", cascade = CascadeType.ALL)
     @JsonIgnoreProperties({"team", "invitiRicevuti", "invitiGenerati", "hibernateLazyInitializer", "handler"})
@@ -43,4 +48,14 @@ public class Team {
     @OneToMany(mappedBy = "team", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnoreProperties({"team", "hibernateLazyInitializer", "handler"})
     private List<Sottomissione> sottomissioni = new ArrayList<Sottomissione>();
+
+    // Relazione: Un Team può subire diverse Violazioni
+    @OneToMany(mappedBy = "team", cascade = CascadeType.ALL)
+    @JsonIgnoreProperties({"team", "hibernateLazyInitializer", "handler"})
+    private List<Violazione> violazioni = new ArrayList<Violazione>();
+
+    // Relazione: Un Team riceve diverse Call di Mentoring
+    @OneToMany(mappedBy = "team", cascade = CascadeType.ALL)
+    @JsonIgnoreProperties({"team", "hibernateLazyInitializer", "handler"})
+    private List<CallMentoring> callRicevute = new ArrayList<CallMentoring>();
 }

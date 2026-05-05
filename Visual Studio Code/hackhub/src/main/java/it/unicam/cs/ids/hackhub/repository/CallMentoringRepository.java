@@ -1,0 +1,11 @@
+package it.unicam.cs.ids.hackhub.repository;
+
+import it.unicam.cs.ids.hackhub.model.*;
+import org.springframework.data.jpa.repository.*;
+import org.springframework.stereotype.*;
+import java.util.*;
+
+@Repository
+public interface CallMentoringRepository extends JpaRepository<CallMentoring, Long> {
+    List<CallMentoring> findByTeam_CodiceTeam(Long codiceTeam);
+}

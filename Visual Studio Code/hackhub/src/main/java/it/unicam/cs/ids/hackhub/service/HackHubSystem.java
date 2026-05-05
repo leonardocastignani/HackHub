@@ -1,7 +1,8 @@
 package it.unicam.cs.ids.hackhub.service;
 
-import it.unicam.cs.ids.hackhub.dto.HackathonDettagliResponse;
+import it.unicam.cs.ids.hackhub.dto.*;
 import it.unicam.cs.ids.hackhub.model.*;
+import it.unicam.cs.ids.hackhub.model.enums.*;
 import org.springframework.stereotype.*;
 import org.springframework.transaction.annotation.*;
 import java.time.*;
@@ -20,6 +21,11 @@ public class HackHubSystem {
     private final ValutazioneService valutazioneService;
     private final GiudiceService giudiceService;
     private final RichiestaSupportoService richiestaSupportoService;
+    private final ViolazioneService violazioneService;
+    private final PagamentoService pagamentoService;
+    private final SistemaPagamentoEsterno sistemaPagamentoEsterno;
+    private final CallMentoringService callMentoringService;
+    private final SistemaCalendarEsterno sistemaCalendarEsterno;
 
     public HackHubSystem(UtenteService utenteService, 
                          TeamService teamService, 
@@ -30,7 +36,12 @@ public class HackHubSystem {
                          SottomissioneService sottomissioneService,
                          ValutazioneService valutazioneService,
                          GiudiceService giudiceService,
-                         RichiestaSupportoService richiestaSupportoService) {
+                         RichiestaSupportoService richiestaSupportoService,
+                         ViolazioneService violazioneService,
+                         PagamentoService pagamentoService,
+                         SistemaPagamentoEsterno sistemaPagamentoEsterno,
+                         CallMentoringService callMentoringService,
+                         SistemaCalendarEsterno sistemaCalendarEsterno) {
         this.utenteService = utenteService;
         this.teamService = teamService;
         this.hackathonService = hackathonService;
@@ -41,11 +52,17 @@ public class HackHubSystem {
         this.valutazioneService = valutazioneService;
         this.giudiceService = giudiceService;
         this.richiestaSupportoService = richiestaSupportoService;
+        this.violazioneService = violazioneService;
+        this.pagamentoService = pagamentoService;
+        this.sistemaPagamentoEsterno = sistemaPagamentoEsterno;
+        this.callMentoringService = callMentoringService;
+        this.sistemaCalendarEsterno = sistemaCalendarEsterno;
     }
 
     // =======================================
     // CASO D'USO: REGISTRAZIONE NUOVO UTENTE
     // =======================================
+    @Transactional
     public Utente registraUtente(String codiceFiscale, String nome, String cognome, String email, String password) {
         Utente nuovoUtente;
 
@@ -56,10 +73,10 @@ public class HackHubSystem {
                 .setCognome(cognome)
                 .setEmail(email)
                 .setPassword(password)
-                .setStato("ATTIVO")
+                .setStato(StatoUtente.ATTIVO)
                 .build();
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Dati non corretti: " + e.getMessage());
+            throw new IllegalArgumentException(e.getMessage());
         }
 
         if (this.utenteService.esisteEmail(email)) {
@@ -75,6 +92,7 @@ public class HackHubSystem {
     // ==================
     // CASO D'USO: LOGIN
     // ==================
+    @Transactional
     public Utente login(String email, String password) {
         Optional<Utente> utenteOpt = this.utenteService.trovaPerEmail(email);
 
@@ -88,10 +106,11 @@ public class HackHubSystem {
             throw new IllegalArgumentException("Credenziali non valide: password errata.");
         }
 
-        if ("DISATTIVO".equals(utente.getStato())) {
+        if (utente.getStato() == StatoUtente.DISATTIVO) {
             throw new IllegalStateException("Accesso negato: Il tuo account è stato DISATTIVATO.");
         }
 
+        utente.setLogged(true);
         return utente;
     }
 
@@ -100,6 +119,8 @@ public class HackHubSystem {
     // ============================
     @Transactional
     public Team creaTeam(String nomeTeam, String ownerCodiceFiscale) {
+        Utente owner = this.verificaLogin(ownerCodiceFiscale);
+
         if (nomeTeam == null || nomeTeam.trim().isEmpty()) {
             throw new IllegalArgumentException("Dati non validi: il nome del team non può essere vuoto.");
         }
@@ -107,9 +128,6 @@ public class HackHubSystem {
         if (this.teamService.esisteNomeTeam(nomeTeam)) {
             throw new IllegalArgumentException("Dati non validi: il nome del team è già in uso.");
         }
-
-        Utente owner = this.utenteService.trovaPerCodiceFiscale(ownerCodiceFiscale)
-                .orElseThrow(() -> new IllegalArgumentException("Utente non trovato."));
 
         if (owner instanceof MembroDelTeam) {
             throw new IllegalStateException("Utente Membro di un Team: non puoi creare un nuovo team.");
@@ -130,33 +148,33 @@ public class HackHubSystem {
     // ==========================================
     // CASO D'USO: VISUALIZZA DETTAGLI HACKATHON
     // ==========================================
+    @Transactional(readOnly = true)
     public HackathonDettagliResponse visualizzaDettagliHackathon(Long id, String codiceFiscaleUtente) {
         Hackathon hackathon = this.hackathonService.ottieniDettagliHackathon(id)
                 .orElseThrow(() -> new IllegalArgumentException("L'hackathon selezionato non è più disponibile."));
 
-        List<String> azioniDisponibili = new ArrayList<>();
+        List<String> azioniDisponibili = new ArrayList<String>();
 
         if (codiceFiscaleUtente != null) {
-            Optional<Utente> utenteOpt = this.utenteService.trovaPerCodiceFiscale(codiceFiscaleUtente);
-            if (utenteOpt.isPresent()) {
-                Utente utente = utenteOpt.get();
-                if (utente instanceof MembroDelTeam && "IN_ISCRIZIONE".equalsIgnoreCase(hackathon.getStato())) {
-                    azioniDisponibili.add("ISCRIVI_TEAM");
-                }
+            Utente utente = this.verificaLogin(codiceFiscaleUtente);
+            if (utente instanceof MembroDelTeam && hackathon.getStato() == StatoHackathon.IN_ISCRIZIONE) {
+                azioniDisponibili.add("ISCRIVI_TEAM");
             }
         }
 
         return new HackathonDettagliResponse(hackathon, azioniDisponibili);
     }
 
-    // =============================================
+    // =====================================
     // CASO D'USO: VISUALIZZA DETTAGLI TEAM
-    // =============================================
+    // =====================================
+    @Transactional(readOnly = true)
     public Team visualizzaDettagliTeam(Long idTeam, String codiceFiscaleRichiedente) {
         Team team = this.teamService.trovaTeamPerId(idTeam)
                 .orElseThrow(() -> new IllegalArgumentException("Team non trovato."));
 
         if (codiceFiscaleRichiedente != null) {
+            this.verificaLogin(codiceFiscaleRichiedente);
             MembroDelTeam membro = this.membroDelTeamService.trovaPerCodiceFiscale(codiceFiscaleRichiedente)
                     .orElseThrow(() -> new IllegalStateException("Accesso negato: Utente non trovato o non sei un membro di un team."));
 
@@ -171,6 +189,7 @@ public class HackHubSystem {
     // ========================================
     // CASO D'USO: VISUALIZZA ELENCO HACKATHON
     // ========================================
+    @Transactional(readOnly = true)
     public Iterable<Hackathon> visualizzaElencoHackathon() {
         return this.hackathonService.ottieniTuttiHackathon();
     }
@@ -178,15 +197,20 @@ public class HackHubSystem {
     // ===========================
     // CASO D'USO: CREA HACKATHON
     // ===========================
-    public Hackathon creaHackathon(String nome, String descrizione, String luogo, String regolamento, Integer dimensioneMassimaTeam, String premio, LocalDate dataInizio, LocalDate dataFine, String codiceFiscaleOrganizzatore) {
+    public Hackathon creaHackathon(String nome, String descrizione, String luogo, String regolamento, Integer dimensioneMassimaTeam, String premio, LocalDate dataInizio, LocalDate dataFine, LocalDate scadenzaIscrizione, String codiceFiscaleOrganizzatore) {
+        this.verificaLogin(codiceFiscaleOrganizzatore);
+        
         Organizzatore organizzatore = this.organizzatoreService.trovaPerCodiceFiscale(codiceFiscaleOrganizzatore)
                 .orElseThrow(() -> new IllegalStateException("Errore: Solo un Organizzatore può creare un Hackathon."));
 
-        if (nome == null || nome.trim().isEmpty() || luogo == null || luogo.trim().isEmpty() || dataInizio == null || dataFine == null || regolamento == null || regolamento.trim().isEmpty() || dimensioneMassimaTeam == null || dimensioneMassimaTeam <= 0 || premio == null || premio.trim().isEmpty()) {
-            throw new IllegalArgumentException("Dati non validi: nome, luogo, regolamento, dimensione massima team, premio  e date sono obbligatori.");
+        if (nome == null || nome.trim().isEmpty() || luogo == null || luogo.trim().isEmpty() || dataInizio == null || dataFine == null || scadenzaIscrizione == null || regolamento == null || regolamento.trim().isEmpty() || dimensioneMassimaTeam == null || dimensioneMassimaTeam <= 0 || premio == null || premio.trim().isEmpty()) {
+            throw new IllegalArgumentException("Dati non validi: nome, luogo, regolamento, dimensione massima team, premio e date sono obbligatori.");
         }
         if (dataInizio.isAfter(dataFine)) {
             throw new IllegalArgumentException("Dati non validi: la data di inizio deve precedere la data di fine.");
+        }
+        if (scadenzaIscrizione.isAfter(dataInizio)) {
+            throw new IllegalArgumentException("Dati non validi: la scadenza dell'iscrizione deve precedere la data di inizio.");
         }
 
         Hackathon nuovoHackathon = new Hackathon();
@@ -198,7 +222,8 @@ public class HackHubSystem {
         nuovoHackathon.setPremio(premio);
         nuovoHackathon.setDataInizio(dataInizio);
         nuovoHackathon.setDataFine(dataFine);
-        nuovoHackathon.setStato("IN_ISCRIZIONE");
+        nuovoHackathon.setScadenzaIscrizione(scadenzaIscrizione);
+        nuovoHackathon.setStato(StatoHackathon.IN_ISCRIZIONE);
         nuovoHackathon.setOrganizzatore(organizzatore);
 
         return this.hackathonService.salvaHackathon(nuovoHackathon);
@@ -209,6 +234,8 @@ public class HackHubSystem {
     // ==========================
     @Transactional
     public Invito invitaUtente(String emailUtente, Long idTeam, String codiceFiscaleOwner) {
+        this.verificaLogin(codiceFiscaleOwner);
+
         Utente destinatario = this.utenteService.trovaPerEmail(emailUtente)
                 .orElseThrow(() -> new IllegalArgumentException("Utente inesistente.")); 
 
@@ -241,7 +268,9 @@ public class HackHubSystem {
     // CASO D'USO: GESTIONE INVITO TEAM
     // =================================
     @Transactional
-    public Invito gestisciInvito(Long idInvito, String azione, String codiceFiscaleUtenteLoggato) {
+    public Invito gestisciInvito(Long idInvito, AzioneInvito azione, String codiceFiscaleUtenteLoggato) {
+        this.verificaLogin(codiceFiscaleUtenteLoggato);
+        
         Invito invito = this.invitoService.trovaPerId(idInvito)
                 .orElseThrow(() -> new IllegalArgumentException("Errore tecnico: Invito non trovato."));
 
@@ -249,24 +278,25 @@ public class HackHubSystem {
             throw new IllegalStateException("Non hai i permessi per gestire questo invito.");
         }
 
-        if (!"IN ATTESA".equals(invito.getStato())) {
+        if (invito.getStato() != StatoInvito.IN_ATTESA) {
             throw new IllegalStateException("Questo invito è già stato gestito.");
         }
 
-        if ("ACCETTA".equalsIgnoreCase(azione)) {
-            invito.setStato("ACCETTATO");
-            invito.setDataStato(LocalDate.now());
+        switch (azione) {
+            case ACCETTA -> {
+                invito.setStato(StatoInvito.ACCETTATO);
+                invito.setDataStato(LocalDate.now());
 
-            Team team = invito.getMittente().getTeam();
-            team.setNumeroMembri(team.getNumeroMembri() + 1);
-            this.teamService.salvaTeam(team);
-
-            this.utenteService.promuoviAMembroDelTeam(invito.getDestinatario().getCodiceFiscale(), team.getCodiceTeam());
-        } else if ("RIFIUTA".equalsIgnoreCase(azione)) {
-            invito.setStato("RIFIUTATO");
-            invito.setDataStato(LocalDate.now());
-        } else {
-            throw new IllegalArgumentException("Azione non valida. Usa ACCETTA o RIFIUTA.");
+                Team team = invito.getMittente().getTeam();
+                team.setNumeroMembri(team.getNumeroMembri() + 1);
+                this.teamService.salvaTeam(team);
+                
+                this.utenteService.promuoviAMembroDelTeam(invito.getDestinatario().getCodiceFiscale(), team.getCodiceTeam());
+            }
+            case RIFIUTA -> {
+                invito.setStato(StatoInvito.RIFIUTATO);
+                invito.setDataStato(LocalDate.now());
+            }
         }
 
         return this.invitoService.salvaInvito(invito);
@@ -277,6 +307,8 @@ public class HackHubSystem {
     // ===================================
     @Transactional
     public Team iscriviTeamHackathon(Long idTeam, Long idHackathon, String codiceFiscaleRichiedente) {
+        this.verificaLogin(codiceFiscaleRichiedente);
+        
         Team team = this.teamService.trovaTeamPerId(idTeam)
                 .orElseThrow(() -> new IllegalArgumentException("Team inesistente."));
         
@@ -287,7 +319,7 @@ public class HackHubSystem {
             throw new IllegalStateException("Permesso negato: Solo l'Owner del Team può iscrivere il team ad un Hackathon.");
         }
 
-        if (!"IN_ISCRIZIONE".equalsIgnoreCase(hackathon.getStato())) {
+        if (hackathon.getStato() != StatoHackathon.IN_ISCRIZIONE) {
             throw new IllegalStateException("Iscrizioni chiuse per questo Hackathon.");
         }
 
@@ -308,21 +340,15 @@ public class HackHubSystem {
     // =================================
     @Transactional
     public Sottomissione caricaSottomissione(Long idTeam, String linkProgetto, String codiceFiscaleRichiedente) {
-        Team team = this.teamService.trovaTeamPerId(idTeam)
-                .orElseThrow(() -> new IllegalArgumentException("Team inesistente."));
+        Team team = this.validazioneTeamAttivoERichiedente(idTeam, codiceFiscaleRichiedente);
         
-        MembroDelTeam richiedente = this.membroDelTeamService.trovaPerCodiceFiscale(codiceFiscaleRichiedente)
-                .orElseThrow(() -> new IllegalArgumentException("Utente non trovato o non è un membro di un team."));
+        Hackathon hackathon = team.getHackathon();
 
-        if (richiedente.getTeam() == null || !richiedente.getTeam().getCodiceTeam().equals(idTeam)) {
-            throw new IllegalStateException("Permesso negato: Devi essere un membro di questo team per caricare una sottomissione.");
-        }
-
-        if (team.getHackathon() == null) {
+        if (hackathon == null) {
             throw new IllegalStateException("Errore: Il team non è iscritto ad alcun Hackathon.");
         }
 
-        if (!"IN_CORSO".equalsIgnoreCase(team.getHackathon().getStato())) {
+        if (hackathon.getStato() != StatoHackathon.IN_CORSO) {
             throw new IllegalStateException("Errore: Puoi caricare la sottomissione solo quando l'Hackathon è IN_CORSO.");
         }
 
@@ -337,20 +363,13 @@ public class HackHubSystem {
     // CASO D'USO: AGGIORNA SOTTOMISSIONE
     // ===================================
     @Transactional
-    public Sottomissione aggiornaSottomissione(Long idSottomissione, String nuovoLink, String codiceFiscaleRichiedente) {
+    public Sottomissione aggiornaSottomissione(Long idSottomissione, String nuovoLink, String codiceFiscaleRichiedente) {        
         Sottomissione sottomissione = this.sottomissioneService.trovaPerId(idSottomissione)
                 .orElseThrow(() -> new IllegalArgumentException("Sottomissione inesistente."));
 
-        Team team = sottomissione.getTeam();
-        
-        MembroDelTeam richiedente = this.membroDelTeamService.trovaPerCodiceFiscale(codiceFiscaleRichiedente)
-                .orElseThrow(() -> new IllegalArgumentException("Utente non trovato o non è un membro di un team."));
+        Team team = this.validazioneTeamAttivoERichiedente(sottomissione.getTeam().getCodiceTeam(), codiceFiscaleRichiedente);
 
-        if (richiedente.getTeam() == null || !richiedente.getTeam().getCodiceTeam().equals(team.getCodiceTeam())) {
-            throw new IllegalStateException("Permesso negato: Devi essere un membro di questo team per aggiornare la sottomissione.");
-        }
-
-        if (!"IN_CORSO".equalsIgnoreCase(team.getHackathon().getStato())) {
+        if (team.getHackathon().getStato() != StatoHackathon.IN_CORSO) {
             throw new IllegalStateException("Errore: Non puoi più modificare la sottomissione. Tempi scaduti.");
         }
 
@@ -363,16 +382,9 @@ public class HackHubSystem {
     // ======================================================
     // CASO D'USO: VISUALIZZA STATO E DETTAGLI SOTTOMISSIONE
     // ======================================================
+    @Transactional(readOnly = true)
     public List<Sottomissione> visualizzaSottomissioniTeam(Long idTeam, String codiceFiscaleRichiedente) {
-        Team team = this.teamService.trovaTeamPerId(idTeam)
-                .orElseThrow(() -> new IllegalArgumentException("Team inesistente."));
-        
-        MembroDelTeam richiedente = this.membroDelTeamService.trovaPerCodiceFiscale(codiceFiscaleRichiedente)
-                .orElseThrow(() -> new IllegalArgumentException("Utente non trovato o non è un membro di un team."));
-
-        if (richiedente.getTeam() == null || !richiedente.getTeam().getCodiceTeam().equals(idTeam)) {
-            throw new IllegalStateException("Permesso negato: Devi essere un membro di questo team per vederne le sottomissioni.");
-        }
+        Team team = this.validazioneTeamAttivoERichiedente(idTeam, codiceFiscaleRichiedente);
 
         return team.getSottomissioni();
     }
@@ -380,14 +392,17 @@ public class HackHubSystem {
     // =================================================
     // CASO D'USO: VISUALIZZA SOTTOMISSIONI DA VALUTARE
     // =================================================
+    @Transactional(readOnly = true)
     public List<Sottomissione> visualizzaSottomissioniDaValutare(Long idHackathon, String codiceFiscaleGiudice) {
+        this.verificaLogin(codiceFiscaleGiudice);
+        
         this.giudiceService.trovaPerCodiceFiscale(codiceFiscaleGiudice)
                 .orElseThrow(() -> new IllegalStateException("Permesso negato: Solo i Giudici possono visualizzare le sottomissioni da valutare."));
 
         Hackathon hackathon = this.hackathonService.ottieniDettagliHackathon(idHackathon)
                 .orElseThrow(() -> new IllegalArgumentException("Hackathon inesistente."));
 
-        if (!"IN_VALUTAZIONE".equalsIgnoreCase(hackathon.getStato())) {
+        if (hackathon.getStato() != StatoHackathon.IN_VALUTAZIONE) {
             throw new IllegalStateException("Errore: Le sottomissioni non sono ancora pronte per la valutazione.");
         }
 
@@ -399,6 +414,8 @@ public class HackHubSystem {
     // =================================
     @Transactional
     public Valutazione valutaSottomissione(Long idSottomissione, int punteggio, String commento, String codiceFiscaleGiudice) {
+        this.verificaLogin(codiceFiscaleGiudice);
+        
         Giudice giudice = this.giudiceService.trovaPerCodiceFiscale(codiceFiscaleGiudice)
                 .orElseThrow(() -> new IllegalStateException("Permesso negato: Solo i Giudici possono valutare."));
 
@@ -407,7 +424,7 @@ public class HackHubSystem {
 
         Hackathon hackathon = sottomissione.getTeam().getHackathon();
 
-        if (hackathon == null || !"IN_VALUTAZIONE".equalsIgnoreCase(hackathon.getStato())) {
+        if (hackathon == null || hackathon.getStato() != StatoHackathon.IN_VALUTAZIONE) {
             throw new IllegalStateException("Errore: Non è possibile valutare in questo momento.");
         }
 
@@ -431,19 +448,12 @@ public class HackHubSystem {
     // ============================================
     // CASO D'USO: VISUALIZZA VALUTAZIONE RICEVUTA
     // ============================================
-    public List<Valutazione> visualizzaValutazioneTeam(Long idTeam, String codiceFiscaleRichiedente) {
-        Team team = this.teamService.trovaTeamPerId(idTeam)
-                .orElseThrow(() -> new IllegalArgumentException("Team non trovato."));
-
-        MembroDelTeam richiedente = this.membroDelTeamService.trovaPerCodiceFiscale(codiceFiscaleRichiedente)
-                .orElseThrow(() -> new IllegalStateException("Utente non autorizzato."));
-
-        if (richiedente.getTeam() == null || !richiedente.getTeam().getCodiceTeam().equals(idTeam)) {
-            throw new IllegalStateException("Permesso negato: Devi essere membro di questo team.");
-        }
+    @Transactional(readOnly = true)
+    public List<Valutazione> visualizzaValutazione(Long idTeam, String codiceFiscaleRichiedente) {
+        Team team = validazioneTeamAttivoERichiedente(idTeam, codiceFiscaleRichiedente);
 
         Hackathon hackathon = team.getHackathon();
-        if (hackathon == null || !"TERMINATO".equalsIgnoreCase(hackathon.getStato())) {
+        if (hackathon == null || hackathon.getStato() != StatoHackathon.CONCLUSO) {
             throw new IllegalStateException("Le valutazioni saranno visibili al termine dell'Hackathon.");
         }
 
@@ -455,33 +465,13 @@ public class HackHubSystem {
         return valutazioni;
     }
 
-    // ============================================
-    // CASO D'USO: VISUALIZZA VALUTAZIONE RICEVUTA
-    // ============================================
-    public List<Valutazione> visualizzaValutazioniRicevute(Long idSottomissione, String codiceFiscaleRichiedente) {
-        MembroDelTeam membro = this.membroDelTeamService.trovaPerCodiceFiscale(codiceFiscaleRichiedente)
-                .orElseThrow(() -> new IllegalArgumentException("Utente non trovato o non fai parte di un team."));
-
-        Sottomissione sottomissione = this.sottomissioneService.trovaPerId(idSottomissione)
-                .orElseThrow(() -> new IllegalArgumentException("Sottomissione inesistente."));
-
-        if (membro.getTeam() == null || !membro.getTeam().getCodiceTeam().equals(sottomissione.getTeam().getCodiceTeam())) {
-            throw new IllegalStateException("Permesso negato: Puoi visualizzare solo le valutazioni del tuo team.");
-        }
-
-        Hackathon hackathon = sottomissione.getTeam().getHackathon();
-        if (hackathon == null || !"TERMINATO".equalsIgnoreCase(hackathon.getStato())) {
-            throw new IllegalStateException("Errore: Le valutazioni saranno visibili solo al termine dell'Hackathon (Stato TERMINATO).");
-        }
-
-        return sottomissione.getValutazioni();
-    }
-
     // =======================================
     // CASO D'USO: GESTISCI GIUDICE HACKATHON
     // =======================================
     @Transactional
     public void nominaGiudice(Long idHackathon, String codiceFiscaleUtente, String codiceFiscaleOrganizzatore) {
+        this.verificaLogin(codiceFiscaleOrganizzatore);
+        
         Utente richiedente = this.utenteService.trovaPerCodiceFiscale(codiceFiscaleOrganizzatore)
                 .orElseThrow(() -> new IllegalArgumentException("Organizzatore non trovato."));
 
@@ -529,6 +519,8 @@ public class HackHubSystem {
     // =======================================
     @Transactional
     public void nominaMentore(Long idHackathon, String codiceFiscaleNuovoMentore, String codiceFiscaleVecchioMentore, String codiceFiscaleOrganizzatore) {
+        this.verificaLogin(codiceFiscaleOrganizzatore);
+        
         Utente richiedente = this.utenteService.trovaPerCodiceFiscale(codiceFiscaleOrganizzatore)
                 .orElseThrow(() -> new IllegalArgumentException("Organizzatore non trovato."));
 
@@ -588,6 +580,8 @@ public class HackHubSystem {
     // ========================================
     @Transactional
     public RichiestaSupporto inviaRichiestaSupporto(String messaggio, String codiceFiscaleRichiedente) {
+        this.verificaLogin(codiceFiscaleRichiedente);
+        
         MembroDelTeam mittente = this.membroDelTeamService.trovaPerCodiceFiscale(codiceFiscaleRichiedente)
                 .orElseThrow(() -> new IllegalArgumentException("Utente non trovato o non sei un membro di un team."));
 
@@ -595,16 +589,20 @@ public class HackHubSystem {
             throw new IllegalStateException("Errore: Devi fare parte di un Team iscritto ad un Hackathon per richiedere supporto.");
         }
 
+        if (mittente.getTeam().getStato() == StatoTeam.SQUALIFICATO) {
+            throw new IllegalStateException("Errore: Il tuo team è stato squalificato dalla competizione. Impossibile inviare richieste di supporto.");
+        }
+
         Hackathon hackathon = mittente.getTeam().getHackathon();
 
-        if (!"IN_CORSO".equalsIgnoreCase(hackathon.getStato())) {
+        if (hackathon.getStato() != StatoHackathon.IN_CORSO) {
             throw new IllegalStateException("Errore: Puoi richiedere supporto solo quando l'Hackathon è IN_CORSO.");
         }
 
         RichiestaSupporto richiesta = new RichiestaSupporto();
         richiesta.setMessaggio(messaggio);
         richiesta.setMittente(mittente);
-        richiesta.setStato("IN_ATTESA");
+        richiesta.setStato(StatoRichiesta.IN_ATTESA);
 
         return this.richiestaSupportoService.salvaRichiesta(richiesta);
     }
@@ -612,7 +610,10 @@ public class HackHubSystem {
     // =============================================
     // CASO D'USO: VISUALIZZA RICHIESTE DI SUPPORTO
     // =============================================
+    @Transactional(readOnly = true)
     public List<RichiestaSupporto> visualizzaRichiesteSupporto(Long idHackathon, String codiceFiscaleMentore) {
+        this.verificaLogin(codiceFiscaleMentore);
+        
         Utente richiedente = this.utenteService.trovaPerCodiceFiscale(codiceFiscaleMentore)
                 .orElseThrow(() -> new IllegalArgumentException("Utente non trovato."));
 
@@ -636,7 +637,10 @@ public class HackHubSystem {
     // =====================================================
     // CASO D'USO: VISUALIZZA RICHIESTE DI SUPPORTO INVIATE
     // =====================================================
+    @Transactional(readOnly = true)
     public List<RichiestaSupporto> visualizzaRichiesteSupportoInviate(Long idTeam, String codiceFiscaleRichiedente) {
+        this.verificaLogin(codiceFiscaleRichiedente);
+        
         this.teamService.trovaTeamPerId(idTeam)
                 .orElseThrow(() -> new IllegalArgumentException("Team inesistente."));
 
@@ -647,6 +651,10 @@ public class HackHubSystem {
             throw new IllegalStateException("Permesso negato: Puoi visualizzare solo le richieste inviate dal tuo team.");
         }
 
+        if (richiedente.getTeam().getStato() == StatoTeam.SQUALIFICATO) {
+            throw new IllegalStateException("Errore: Il tuo team è stato squalificato dalla competizione. Impossibile visualizzare richieste di supporto.");
+        }
+
         return this.richiestaSupportoService.trovaPerTeam(idTeam);
     }
 
@@ -655,6 +663,8 @@ public class HackHubSystem {
     // =======================================
     @Transactional
     public RichiestaSupporto prendiInCaricoRichiesta(Long idRichiesta, String codiceFiscaleMentore) {
+        this.verificaLogin(codiceFiscaleMentore);
+        
         Utente richiedente = this.utenteService.trovaPerCodiceFiscale(codiceFiscaleMentore)
                 .orElseThrow(() -> new IllegalArgumentException("Utente non trovato."));
 
@@ -665,7 +675,7 @@ public class HackHubSystem {
         RichiestaSupporto richiesta = this.richiestaSupportoService.trovaPerId(idRichiesta)
                 .orElseThrow(() -> new IllegalArgumentException("Richiesta di supporto inesistente."));
 
-        if (!"IN_ATTESA".equals(richiesta.getStato())) {
+        if (richiesta.getStato() != StatoRichiesta.IN_ATTESA) {
             throw new IllegalStateException("Errore: Questa richiesta è già stata presa in carico o risolta da un altro Mentore.");
         }
 
@@ -678,7 +688,7 @@ public class HackHubSystem {
         }
 
         richiesta.setMentore(mentore);
-        richiesta.setStato("IN_CARICO");
+        richiesta.setStato(StatoRichiesta.IN_CARICO);
 
         return this.richiestaSupportoService.salvaRichiesta(richiesta);
     }
@@ -688,6 +698,8 @@ public class HackHubSystem {
     // ===========================================
     @Transactional
     public RichiestaSupporto rispondiRichiestaSupporto(Long idRichiesta, String testoRisposta, String codiceFiscaleMentore) {
+        this.verificaLogin(codiceFiscaleMentore);
+
         Utente richiedente = this.utenteService.trovaPerCodiceFiscale(codiceFiscaleMentore)
                 .orElseThrow(() -> new IllegalArgumentException("Utente non trovato."));
 
@@ -698,7 +710,7 @@ public class HackHubSystem {
         RichiestaSupporto richiesta = this.richiestaSupportoService.trovaPerId(idRichiesta)
                 .orElseThrow(() -> new IllegalArgumentException("Richiesta di supporto inesistente."));
 
-        if (!"IN_CARICO".equals(richiesta.getStato())) {
+        if (richiesta.getStato() != StatoRichiesta.IN_CARICO) {
             throw new IllegalStateException("Errore: Puoi rispondere solo a una richiesta che è nello stato IN_CARICO.");
         }
 
@@ -708,8 +720,431 @@ public class HackHubSystem {
 
         richiesta.setRisposta(testoRisposta);
         richiesta.setDataRisposta(LocalDate.now());
-        richiesta.setStato("RISOLTA");
+        richiesta.setStato(StatoRichiesta.RISOLTA);
 
         return this.richiestaSupportoService.salvaRichiesta(richiesta);
+    }
+
+    // ===============================
+    // CASO D'USO: SEGNALA VIOLAZIONE
+    // ===============================
+    @Transactional
+    public Violazione segnalaViolazione(Long idTeam, String motivazione, String codiceFiscaleMentore) {
+        this.verificaLogin(codiceFiscaleMentore);
+        
+        Utente richiedente = this.utenteService.trovaPerCodiceFiscale(codiceFiscaleMentore)
+                .orElseThrow(() -> new IllegalArgumentException("Utente non trovato."));
+
+        if (!(richiedente instanceof Mentore mentore)) {
+            throw new IllegalStateException("Permesso negato: Solo i Mentori possono segnalare violazioni.");
+        }
+
+        Team teamTarget = this.teamService.trovaTeamPerId(idTeam)
+                .orElseThrow(() -> new IllegalArgumentException("Team inesistente."));
+
+        Hackathon hackathon = teamTarget.getHackathon();
+        if (hackathon == null) {
+            throw new IllegalStateException("Errore: Il Team selezionato non partecipa ad alcun Hackathon.");
+        }
+
+        boolean mentoreAssegnato = hackathon.getMentori().stream()
+                .anyMatch(m -> m.getCodiceFiscale().equals(codiceFiscaleMentore));
+
+        if (!mentoreAssegnato) {
+            throw new IllegalStateException("Permesso negato: Puoi segnalare solo i Team che partecipano agli Hackathon che supervisioni.");
+        }
+
+        if (this.violazioneService.esisteViolazioneInAttesaPerTeam(idTeam)) {
+            throw new IllegalStateException("Attenzione: Esiste già una segnalazione in attesa per questo Team. Attendi che l'Organizzatore la gestisca.");
+        }
+
+        Violazione violazione = new Violazione();
+        violazione.setMotivazione(motivazione);
+        violazione.setTeam(teamTarget);
+        violazione.setMentore(mentore);
+        violazione.setStatoProvvedimento(StatoViolazione.IN_ATTESA);
+
+        return this.violazioneService.salvaViolazione(violazione);
+    }
+
+    // ==================================================
+    // CASO D'USO: GESTISCI VIOLAZIONE / SQUALIFICA TEAM
+    // ==================================================
+    @Transactional
+    public Violazione gestisciViolazione(Long idViolazione, String decisione, EsitoViolazione esito, String codiceFiscaleOrganizzatore) {
+        this.verificaLogin(codiceFiscaleOrganizzatore);
+        
+        Utente richiedente = this.utenteService.trovaPerCodiceFiscale(codiceFiscaleOrganizzatore)
+                .orElseThrow(() -> new IllegalArgumentException("Utente non trovato."));
+
+        if (!(richiedente instanceof Organizzatore)) {
+            throw new IllegalStateException("Permesso negato: Solo gli Organizzatori possono gestire le violazioni.");
+        }
+
+        Violazione violazione = this.violazioneService.trovaPerId(idViolazione)
+                .orElseThrow(() -> new IllegalArgumentException("Violazione inesistente."));
+
+        if (violazione.getStatoProvvedimento() == StatoViolazione.RISOLTA) {
+            throw new IllegalStateException("Errore: Questa segnalazione è già stata gestita e risolta.");
+        }
+
+        Hackathon hackathon = violazione.getTeam().getHackathon();
+        if (!hackathon.getOrganizzatore().getCodiceFiscale().equals(codiceFiscaleOrganizzatore)) {
+            throw new IllegalStateException("Permesso negato: Non puoi gestire violazioni di Hackathon che non hai organizzato.");
+        }
+
+        violazione.setDecisione(decisione);
+        violazione.setEsito(esito);
+        violazione.setDataDecisione(LocalDate.now());
+        violazione.setStatoProvvedimento(StatoViolazione.RISOLTA);
+
+        if (esito == EsitoViolazione.SQUALIFICA) {
+            Team teamTarget = violazione.getTeam();
+
+            if (teamTarget.getStato() == StatoTeam.SQUALIFICATO) {
+                this.violazioneService.salvaViolazione(violazione);
+                throw new IllegalStateException("Il Team è già stato squalificato da questo Hackathon. La segnalazione è stata comunque marcata come RISOLTA.");
+            } else {
+                this.teamService.squalificaTeam(teamTarget);
+            }
+        }
+
+        return this.violazioneService.salvaViolazione(violazione);
+    }
+
+    // ====================================
+    // CASO D'USO: PROCLAMA TEAM VINCITORE
+    // ====================================
+    @Transactional
+    public Hackathon proclamaVincitore(Long idHackathon, Long idTeamVincitore, String codiceFiscaleOrganizzatore) {
+        this.verificaLogin(codiceFiscaleOrganizzatore);
+        
+        Utente richiedente = this.utenteService.trovaPerCodiceFiscale(codiceFiscaleOrganizzatore)
+                .orElseThrow(() -> new IllegalArgumentException("Utente non trovato."));
+
+        if (!(richiedente instanceof Organizzatore)) {
+            throw new IllegalStateException("Permesso negato: Solo gli Organizzatori possono proclamare il vincitore.");
+        }
+
+        Hackathon hackathon = this.hackathonService.ottieniDettagliHackathon(idHackathon)
+                .orElseThrow(() -> new IllegalArgumentException("Hackathon inesistente."));
+
+        if (!hackathon.getOrganizzatore().getCodiceFiscale().equals(codiceFiscaleOrganizzatore)) {
+            throw new IllegalStateException("Permesso negato: Puoi gestire solo i TUOI Hackathon.");
+        }
+
+        if (hackathon.getStato() != StatoHackathon.IN_VALUTAZIONE) {
+            throw new IllegalStateException("Errore: È possibile proclamare il vincitore solo quando l'Hackathon è IN_VALUTAZIONE.");
+        }
+
+        long nonValutate = this.sottomissioneService.contaSottomissioniAmmissibiliNonValutate(idHackathon, StatoTeam.SQUALIFICATO);
+        if (nonValutate > 0) {
+            throw new IllegalStateException("Operazione bloccata: Ci sono sottomissioni ammissibili non ancora valutate dal Giudice.");
+        }
+
+        Team teamVincitore = this.teamService.trovaTeamPerId(idTeamVincitore)
+                .orElseThrow(() -> new IllegalArgumentException("Team vincitore inesistente."));
+
+        if (teamVincitore.getHackathon() == null || !teamVincitore.getHackathon().getId().equals(idHackathon)) {
+            throw new IllegalStateException("Errore: Il Team selezionato non partecipa a questo Hackathon.");
+        }
+
+        if (teamVincitore.getStato() == StatoTeam.SQUALIFICATO) {
+            throw new IllegalStateException("Errore critico: Non è possibile proclamare vincitore un Team squalificato!");
+        }
+
+        hackathon.setVincitore(teamVincitore);
+        hackathon.setStato(StatoHackathon.CONCLUSO);
+
+        return this.hackathonService.salvaHackathon(hackathon);
+    }
+
+    // ===================================
+    // CASO D'USO: AVVIA PAGAMENTO PREMIO
+    // ===================================
+    @Transactional
+    public Pagamento avviaPagamentoPremio(Long idHackathon, String codiceFiscaleOrganizzatore) {
+        this.verificaLogin(codiceFiscaleOrganizzatore);
+        
+        Utente richiedente = this.utenteService.trovaPerCodiceFiscale(codiceFiscaleOrganizzatore)
+                .orElseThrow(() -> new IllegalArgumentException("Utente non trovato."));
+
+        if (!(richiedente instanceof Organizzatore organizzatore)) {
+            throw new IllegalStateException("Permesso negato: Solo gli Organizzatori possono avviare pagamenti.");
+        }
+
+        Hackathon hackathon = this.hackathonService.ottieniDettagliHackathon(idHackathon)
+                .orElseThrow(() -> new IllegalArgumentException("Hackathon inesistente."));
+
+        if (!hackathon.getOrganizzatore().getCodiceFiscale().equals(codiceFiscaleOrganizzatore)) {
+            throw new IllegalStateException("Permesso negato: Puoi erogare premi solo per i TUOI Hackathon.");
+        }
+
+        if (hackathon.getStato() != StatoHackathon.CONCLUSO) {
+            throw new IllegalStateException("Errore: Puoi erogare il premio solo quando l'Hackathon è in stato CONCLUSO.");
+        }
+
+        Team vincitore = hackathon.getVincitore();
+        if (vincitore == null) {
+            throw new IllegalStateException("Errore critico: Nessun vincitore registrato per questo Hackathon.");
+        }
+
+        double importo;
+        try {
+            String numerico = hackathon.getPremio().replaceAll("[^\\d.,]", "").replace(",", ".");
+            importo = Double.parseDouble(numerico);
+        } catch (Exception e) {
+            throw new IllegalStateException("Impossibile determinare l'importo numerico dal premio specificato: " + hackathon.getPremio());
+        }
+
+        if (importo <= 0) {
+            throw new IllegalStateException("Errore: Il premio deve essere maggiore di 0 per avviare il pagamento.");
+        }
+
+        // --- CONTATTO CON IL SISTEMA DI PAGAMENTO ESTERNO ---
+        SistemaPagamentoEsterno.EsitoTransazione esito = this.sistemaPagamentoEsterno.processaPagamento(importo, "IBAN-" + vincitore.getCodiceTeam());
+
+        // --- CREAZIONE RECORD PAGAMENTO ---
+        Pagamento pagamento = new Pagamento();
+        pagamento.setImporto(importo);
+        pagamento.setOrganizzatore(organizzatore);
+        pagamento.setHackathon(hackathon);
+        pagamento.setTeamVincitore(vincitore);
+
+        if (esito.successo()) {
+            pagamento.setStato(StatoPagamento.COMPLETATO);
+            pagamento.setIdPagamentoEsterno(esito.idTransazione());
+        } else {
+            pagamento.setStato(StatoPagamento.FALLITO);
+            pagamento.setMotivoErrore(esito.errore());
+        }
+
+        return this.pagamentoService.salvaPagamento(pagamento);
+    }
+
+    // ===========================================================
+    // CASO D'USO: PROPONI CALL MENTORING / PRENOTA SLOT CALENDAR
+    // ===========================================================
+    @Transactional
+    public CallMentoring proponiCallMentoring(Long idTeam, LocalDateTime dataOra, int durataMinuti, String codiceFiscaleMentore) {
+        this.verificaLogin(codiceFiscaleMentore);
+        
+        Utente richiedente = this.utenteService.trovaPerCodiceFiscale(codiceFiscaleMentore)
+                .orElseThrow(() -> new IllegalArgumentException("Utente inesistente."));
+
+        if (!(richiedente instanceof Mentore mentore)) {
+            throw new IllegalStateException("Permesso negato: Solo i Mentori possono proporre call.");
+        }
+
+        Team teamDestinatario = this.teamService.trovaTeamPerId(idTeam)
+                .orElseThrow(() -> new IllegalArgumentException("Team inesistente."));
+
+        Hackathon hackathon = teamDestinatario.getHackathon();
+        
+        if (hackathon == null || hackathon.getStato() != StatoHackathon.IN_CORSO) {
+            throw new IllegalStateException("Errore: È possibile proporre call solo a team iscritti ad Hackathon IN_CORSO.");
+        }
+
+        if (teamDestinatario.getStato() == StatoTeam.SQUALIFICATO) {
+            throw new IllegalStateException("Errore: Il Team è stato squalificato, impossibile proporre call di mentoring.");
+        }
+
+        boolean mentoreAssegnato = hackathon.getMentori().stream()
+                .anyMatch(m -> m.getCodiceFiscale().equals(codiceFiscaleMentore));
+
+        if (!mentoreAssegnato) {
+            throw new IllegalStateException("Permesso negato: Puoi proporre call solo ai Team degli Hackathon che supervisioni.");
+        }
+
+        // --- CONTATTO CON IL SISTEMA CALENDAR ESTERNO ---
+        SistemaCalendarEsterno.RispostaCalendar rispostaApi = this.sistemaCalendarEsterno.prenotaSlot(dataOra, durataMinuti);
+
+        if (!rispostaApi.successo()) {
+            throw new IllegalStateException("Prenotazione fallita: " + rispostaApi.errore());
+        }
+
+        CallMentoring nuovaCall = new CallMentoring();
+        nuovaCall.setDataOra(dataOra);
+        nuovaCall.setIdCallEsterno(rispostaApi.idCallEsterno());
+        nuovaCall.setLinkMeet(rispostaApi.linkMeet());
+        nuovaCall.setMentore(mentore);
+        nuovaCall.setTeam(teamDestinatario);
+        nuovaCall.setStato(StatoCall.PROGRAMMATA);
+
+        return this.callMentoringService.salvaCall(nuovaCall);
+    }
+
+    // ===================================================
+    // CASO D'USO: GESTISCI CALL - Visualizza Elenco Call
+    // ===================================================
+    @Transactional(readOnly = true)
+    public List<CallMentoring> visualizzaElencoCall(Long idTeam, String codiceFiscaleMembro) {
+        this.verificaLogin(codiceFiscaleMembro);
+        
+        MembroDelTeam membro = this.membroDelTeamService.trovaPerCodiceFiscale(codiceFiscaleMembro)
+                .orElseThrow(() -> new IllegalArgumentException("Membro inesistente."));
+
+        if (membro.getTeam() == null || !membro.getTeam().getCodiceTeam().equals(idTeam)) {
+            throw new IllegalStateException("Permesso negato: Non fai parte di questo Team.");
+        }
+
+        if (membro.getTeam().getStato() == StatoTeam.SQUALIFICATO) {
+            throw new IllegalStateException("Errore: Il Team è stato squalificato, impossibile visualizzare le call di mentoring.");
+        }
+
+        return this.callMentoringService.visualizzaElencoCallTeam(idTeam);
+    }
+
+    // =====================================================
+    // CASO D'USO: GESTISCI CALL - Visualizza Dettagli Call
+    // =====================================================
+    @Transactional(readOnly = true)
+    public CallMentoring visualizzaDettagliCall(Long idCall, String codiceFiscaleMembro) {
+        this.verificaLogin(codiceFiscaleMembro);
+        
+        MembroDelTeam membro = this.membroDelTeamService.trovaPerCodiceFiscale(codiceFiscaleMembro)
+                .orElseThrow(() -> new IllegalArgumentException("Membro inesistente."));
+
+        CallMentoring call = this.callMentoringService.trovaPerId(idCall)
+                .orElseThrow(() -> new IllegalArgumentException("Call inesistente."));
+
+        if (membro.getTeam() == null || !membro.getTeam().getCodiceTeam().equals(call.getTeam().getCodiceTeam())) {
+            throw new IllegalStateException("Permesso negato: Non sei autorizzato a visualizzare i dettagli di questa call.");
+        }
+
+        if (membro.getTeam().getStato() == StatoTeam.SQUALIFICATO) {
+            throw new IllegalStateException("Errore: Il Team è stato squalificato, impossibile visualizzare i dettagli di questa call.");
+        }
+
+        return call;
+    }
+
+    // =========================
+    // CASO D'USO: ANNULLA CALL
+    // =========================
+    @Transactional
+    public CallMentoring annullaCall(Long idCall, String codiceFiscaleMembro) {
+        this.verificaLogin(codiceFiscaleMembro);
+        
+        MembroDelTeam membro = this.membroDelTeamService.trovaPerCodiceFiscale(codiceFiscaleMembro)
+                .orElseThrow(() -> new IllegalArgumentException("Membro inesistente."));
+
+        CallMentoring call = this.callMentoringService.trovaPerId(idCall)
+                .orElseThrow(() -> new IllegalArgumentException("Call inesistente."));
+
+        if (membro.getTeam() == null || !membro.getTeam().getCodiceTeam().equals(call.getTeam().getCodiceTeam())) {
+            throw new IllegalStateException("Permesso negato: Non puoi annullare una call che non appartiene al tuo Team.");
+        }
+
+        if (membro.getTeam().getStato() == StatoTeam.SQUALIFICATO) {
+            throw new IllegalStateException("Errore: Il Team è stato squalificato, impossibile annullare questa call.");
+        }
+
+        if (call.getStato() != StatoCall.PROGRAMMATA) {
+            throw new IllegalStateException("Errore: Impossibile annullare una call in stato " + call.getStato() + ".");
+        }
+
+        // --- CONTATTO CON IL SISTEMA CALENDAR ESTERNO ---
+        boolean successoEsterno = false;
+        if (call.getIdCallEsterno() != null) {
+            successoEsterno = this.sistemaCalendarEsterno.annullaSlot(call.getIdCallEsterno());
+        }
+
+        // --- AGGIORNAMENTO STATO LOCALE ---
+        call.setStato(StatoCall.ANNULLATA);
+        CallMentoring callSalvata = this.callMentoringService.salvaCall(call);
+
+        if (!successoEsterno && call.getIdCallEsterno() != null) {
+            throw new IllegalStateException("La Call è stata ANNULLATA nel sistema, ma non è stato possibile sincronizzare l'annullamento con il Calendar esterno.");
+        }
+
+        return callSalvata;
+    }
+
+    // ===================
+    // CASO D'USO: LOGOUT
+    // ===================
+    @Transactional
+    public void logout(String codiceFiscale) {
+        this.verificaLogin(codiceFiscale);
+
+        Utente utente = this.utenteService.trovaPerCodiceFiscale(codiceFiscale)
+                .orElseThrow(() -> new IllegalArgumentException("Sessione non valida o utente inesistente."));
+
+        if (!utente.isLogged()) {
+             throw new IllegalStateException("L'utente non è attualmente loggato.");
+        }
+
+        utente.setLogged(false);
+        this.utenteService.salvaUtente(utente);
+    }
+
+    // =====================================
+    // CASO D'USO: AGGIORNA STATO HACKATHON
+    // =====================================
+    @Transactional
+    public Hackathon aggiornaStatoHackathon(Long idHackathon, String nuovoStato, String codiceFiscaleOrganizzatore) {
+        this.verificaLogin(codiceFiscaleOrganizzatore);
+        
+        Utente richiedente = this.utenteService.trovaPerCodiceFiscale(codiceFiscaleOrganizzatore)
+                .orElseThrow(() -> new IllegalArgumentException("Utente non trovato."));
+
+        if (!(richiedente instanceof Organizzatore)) {
+            throw new IllegalStateException("Permesso negato: Solo gli Organizzatori possono forzare lo stato di un Hackathon.");
+        }
+
+        Hackathon hackathon = this.hackathonService.ottieniDettagliHackathon(idHackathon)
+                .orElseThrow(() -> new IllegalArgumentException("Hackathon inesistente."));
+
+        if (!hackathon.getOrganizzatore().getCodiceFiscale().equals(codiceFiscaleOrganizzatore)) {
+            throw new IllegalStateException("Permesso negato: Puoi modificare solo lo stato dei TUOI Hackathon.");
+        }
+
+        StatoHackathon statoEnum;
+        try {
+            statoEnum = StatoHackathon.valueOf(nuovoStato.toUpperCase().trim());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Stato non valido. Usa uno tra: " + Arrays.toString(StatoHackathon.values()));
+        }
+
+        hackathon.setStato(statoEnum);
+        return this.hackathonService.salvaHackathon(hackathon);
+    }
+
+    // ================================
+    // HELPER: VERIFICA STATO DI LOGIN
+    // ================================
+    private Utente verificaLogin(String codiceFiscale) {
+        Utente utente = this.utenteService.trovaPerCodiceFiscale(codiceFiscale)
+                .orElseThrow(() -> new IllegalArgumentException("Utente non trovato."));
+
+        if (!utente.isLogged()) {
+            throw new IllegalStateException("Accesso negato: devi prima effettuare il login.");
+        }
+
+        return utente;
+    }
+
+    // ===================================================
+    // HELPER: VALIDAZIONE APPARTENENZA TEAM E SQUALIFICA
+    // ===================================================
+    private Team validazioneTeamAttivoERichiedente(Long idTeam, String codiceFiscale) {
+        this.verificaLogin(codiceFiscale);
+
+        Team team = this.teamService.trovaTeamPerId(idTeam)
+                .orElseThrow(() -> new IllegalArgumentException("Team inesistente."));
+
+        if (team.getStato() == StatoTeam.SQUALIFICATO) {
+            throw new IllegalStateException("Errore: Il tuo team è stato squalificato dalla competizione. Operazione non consentita.");
+        }
+
+        MembroDelTeam richiedente = this.membroDelTeamService.trovaPerCodiceFiscale(codiceFiscale)
+                .orElseThrow(() -> new IllegalArgumentException("Utente non trovato o non sei un membro di un team."));
+
+        if (richiedente.getTeam() == null || !richiedente.getTeam().getCodiceTeam().equals(idTeam)) {
+            throw new IllegalStateException("Permesso negato: Devi essere un membro di questo team per eseguire l'operazione.");
+        }
+
+        return team;
     }
 }
